@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Yokos</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #000; overflow: hidden; }
@@ -18,21 +16,19 @@
     <div id="app-wrapper" class="relative w-full h-[100dvh] sm:h-[850px] sm:w-[390px] sm:rounded-[40px] sm:border-[6px] sm:border-gray-800 bg-[#121212] text-white flex flex-col">
         
         <div id="screen-login" class="absolute inset-0 bg-[#121212] z-[100] flex flex-col items-center justify-center p-6">
-            <i class="ph-fill ph-lightning text-[#8A2BE2] text-6xl mb-4"></i>
             <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#8A2BE2] to-[#00BFFF] mb-8">Yokos</h1>
             
             <div class="w-full space-y-4 max-w-sm">
-                <input id="login-pseudo" type="text" placeholder="Pseudo" class="w-full bg-[#1E1E1E] border border-white/10 rounded-xl px-4 py-4 text-center focus:border-[#8A2BE2] outline-none">
-                <input id="login-pin" type="password" inputmode="numeric" maxlength="4" placeholder="Code PIN (4 chiffres)" class="w-full bg-[#1E1E1E] border border-white/10 rounded-xl px-4 py-4 text-center font-bold tracking-[0.5em] focus:border-[#8A2BE2] outline-none">
+                <input id="login-pseudo" type="text" placeholder="Pseudo" class="w-full bg-[#1E1E1E] border border-white/10 rounded-xl px-4 py-4 text-center outline-none">
+                <input id="login-pin" type="password" maxlength="4" placeholder="Code PIN (4 chiffres)" class="w-full bg-[#1E1E1E] border border-white/10 rounded-xl px-4 py-4 text-center outline-none">
                 
                 <div class="flex gap-3 pt-2">
-                    <button id="btn-login" class="flex-1 py-4 rounded-xl bg-[#1E1E1E] border border-white/10 font-bold hover:bg-white/5 transition">Connexion</button>
-                    <button id="btn-register" class="flex-1 py-4 rounded-xl bg-[#8A2BE2] font-bold shadow-lg shadow-[#8A2BE2]/20 hover:scale-[1.02] transition">Créer</button>
+                    <button id="btn-login" class="flex-1 py-4 rounded-xl bg-[#1E1E1E] border border-white/10 font-bold">Connexion</button>
+                    <button id="btn-register" class="flex-1 py-4 rounded-xl bg-[#8A2BE2] font-bold">Créer</button>
                 </div>
             </div>
 
-            <div id="login-feedback" class="mt-8 px-4 py-3 rounded-xl border border-transparent w-full max-w-sm text-center text-sm font-medium hidden">
-            </div>
+            <div id="login-feedback" class="mt-8 px-4 py-3 rounded-xl border border-transparent w-full max-w-sm text-center text-sm font-medium hidden"></div>
         </div>
     </div>
 
@@ -42,89 +38,78 @@
         import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
         const feedbackEl = document.getElementById('login-feedback');
-        const pseudoInput = document.getElementById('login-pseudo');
-        const pinInput = document.getElementById('login-pin');
-
+        
         let auth, db;
+
+        // Fonction pour logger et afficher l'erreur
+        const abortInit = (msg) => {
+            console.error("DEBUG FIREBASE:", msg);
+            feedbackEl.innerText = msg;
+            feedbackEl.classList.remove('hidden');
+        };
 
         const initFirebase = () => {
             try {
-                const configStr = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
-                if (!configStr) throw new Error("Configuration Firebase manquante");
-                
-                const firebaseConfig = JSON.parse(configStr);
-                const app = initializeApp(firebaseConfig);
+                // 1. Vérification de l'existence de la variable globale
+                if (typeof __firebase_config === 'undefined') {
+                    return abortInit("Erreur : Variable __firebase_config non définie.");
+                }
+
+                // 2. Tente le parsing
+                let config;
+                try {
+                    config = JSON.parse(__firebase_config);
+                } catch (e) {
+                    return abortInit("Erreur : Format JSON invalide dans __firebase_config.");
+                }
+
+                // 3. Initialisation
+                const app = initializeApp(config);
                 auth = getAuth(app);
                 db = getFirestore(app);
                 
-                initAuth();
+                // Auth auto
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    signInWithCustomToken(auth, __initial_auth_token).catch(() => signInAnonymously(auth));
+                } else {
+                    signInAnonymously(auth).catch(e => console.log("Auth Anonyme:", e));
+                }
+
             } catch (e) {
-                console.error("Erreur critique Firebase:", e);
-                showFeedback("Erreur de connexion au serveur.");
+                abortInit("Erreur critique : " + e.message);
             }
         };
 
-        const initAuth = async () => {
-          try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-              await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-              await signInAnonymously(auth);
-            }
-          } catch (e) {
-            console.error("Auth init error", e);
-          }
-        };
-
-        function showFeedback(msg, type = 'error') {
+        function showFeedback(msg) {
             feedbackEl.innerText = msg;
-            feedbackEl.className = `mt-8 px-4 py-3 rounded-xl w-full max-w-sm text-center text-sm font-medium ${type === 'error' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-green-500/10 text-green-400 border-green-500/20'}`;
             feedbackEl.classList.remove('hidden');
-            document.querySelectorAll('input').forEach(i => i.classList.add('shake'));
-            setTimeout(() => document.querySelectorAll('input').forEach(i => i.classList.remove('shake')), 500);
+            feedbackEl.className = "mt-8 px-4 py-3 rounded-xl bg-red-500/10 text-red-400 border-red-500/20 w-full max-w-sm text-center text-sm";
         }
 
         async function handleAuth(isRegister) {
-            if (!auth) {
-                showFeedback("Système non initialisé.");
-                return;
-            }
+            if (!auth) return showFeedback("Le système attend les serveurs...");
+            
+            const pseudo = document.getElementById('login-pseudo').value.trim().toLowerCase();
+            const pin = document.getElementById('login-pin').value.trim();
 
-            const pseudo = pseudoInput.value.trim().toLowerCase();
-            const pin = pinInput.value.trim();
-
-            if (pseudo.length < 3 || pin.length !== 4) {
-                showFeedback("Pseudo (min 3) et PIN (4 chiffres) requis.");
-                return;
-            }
-
-            feedbackEl.innerText = "Chargement...";
-            feedbackEl.className = "mt-8 px-4 py-3 rounded-xl w-full max-w-sm text-center text-sm font-medium bg-white/5 text-gray-300";
-            feedbackEl.classList.remove('hidden');
+            if (!pseudo || !pin) return showFeedback("Pseudo et PIN requis.");
 
             try {
                 if (isRegister) {
                     const userCred = await createUserWithEmailAndPassword(auth, `${pseudo}@yokos.app`, `${pin}yokos`);
-                    await setDoc(doc(db, 'users', userCred.user.uid), { uid: userCred.user.uid, pseudo, avatar: "..." });
+                    await setDoc(doc(db, 'users', userCred.user.uid), { uid: userCred.user.uid, pseudo });
                 } else {
                     await signInWithEmailAndPassword(auth, `${pseudo}@yokos.app`, `${pin}yokos`);
                 }
             } catch (err) {
-                if (err.code === 'auth/network-request-failed') {
-                    showFeedback("Erreur réseau : vérifie ta connexion internet.");
-                } else if (err.code === 'auth/email-already-in-use') {
-                    showFeedback("Ce pseudo est déjà pris.");
-                } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
-                    showFeedback("Pseudo ou PIN incorrect.");
-                } else {
-                    showFeedback("Erreur : " + err.code.replace('auth/', ''));
-                }
+                showFeedback("Erreur : " + (err.code || "Problème inconnu"));
             }
         }
 
         document.getElementById('btn-register').onclick = () => handleAuth(true);
         document.getElementById('btn-login').onclick = () => handleAuth(false);
 
+        // Lancement
         initFirebase();
     </script>
 </body>
