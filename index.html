@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yoko</title>
+    <title>Yokos</title>
     
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
+    <!-- Librairies pour QR Code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -39,6 +43,9 @@
             100% { background-color: #121212; }
         }
         .flash-active { animation: flashPing 0.6s ease-out 3; }
+
+        /* Fix pour le scanner QR */
+        #qr-reader video { border-radius: 1rem; object-fit: cover; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen">
@@ -48,7 +55,7 @@
         <!-- ÉCRAN DE CONNEXION / INSCRIPTION -->
         <div id="screen-login" class="absolute inset-0 bg-yoko-bg z-[100] flex flex-col items-center justify-center p-6 transition-transform duration-500">
             <i class="ph-fill ph-lightning text-yoko-primary text-6xl mb-4 neon-glow-primary rounded-full"></i>
-            <h1 class="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-yoko-primary to-yoko-secondary bg-clip-text text-transparent mb-2">Yoko</h1>
+            <h1 class="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-yoko-primary to-yoko-secondary bg-clip-text text-transparent mb-2">Yokos</h1>
             <p class="text-gray-400 text-center text-sm mb-10">Le réseau rapide. Zéro mail. Zéro trace.</p>
             
             <div class="w-full space-y-4 max-w-sm">
@@ -71,14 +78,14 @@
         <header id="main-header" class="flex justify-between items-center px-6 py-5 z-10 bg-yoko-bg/90 backdrop-blur-md border-b border-white/5">
             <div class="flex items-center gap-2">
                 <i class="ph-fill ph-lightning text-yoko-secondary text-2xl"></i>
-                <h1 class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-yoko-primary to-yoko-secondary bg-clip-text text-transparent">Yoko</h1>
+                <h1 class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-yoko-primary to-yoko-secondary bg-clip-text text-transparent">Yokos</h1>
                 <button id="btn-open-profile" class="ml-2 relative w-9 h-9 rounded-full border-[1.5px] border-yoko-primary/50 overflow-hidden cursor-pointer">
                     <img id="header-avatar" src="https://placehold.co/100/1E1E1E/8A2BE2?text=?" alt="Profil" class="w-full h-full object-cover">
                 </button>
             </div>
         </header>
 
-        <!-- TABS (Messages / Stories) -->
+        <!-- TABS -->
         <div class="flex justify-center gap-8 py-3 text-sm font-semibold border-b border-white/5 z-10 bg-yoko-bg">
             <span id="tab-messages" class="cursor-pointer text-white border-b-2 border-yoko-primary pb-1 px-2">Messages</span>
             <span id="tab-stories" class="cursor-pointer text-gray-500 px-2">Stories</span>
@@ -93,9 +100,13 @@
                     <!-- Rempli par JS -->
                 </div>
 
-                <div class="absolute bottom-6 right-6 flex flex-col gap-4 z-20 items-center">
-                    <button id="btn-open-users" class="w-14 h-14 rounded-full bg-gradient-to-r from-yoko-primary to-yoko-secondary text-white flex items-center justify-center text-2xl shadow-[0_4px_20px_rgba(138,43,226,0.5)] active:scale-95 transition-transform">
-                        <i class="ph ph-plus"></i>
+                <!-- FAB BOUTONS DROITE -->
+                <div class="absolute bottom-6 right-6 flex flex-col gap-3 z-20 items-center">
+                    <button id="btn-open-add-friend" class="w-12 h-12 rounded-full bg-yoko-surface border border-yoko-primary/50 text-yoko-primary flex items-center justify-center text-xl shadow-lg active:scale-95 transition-transform">
+                        <i class="ph ph-user-plus"></i>
+                    </button>
+                    <button id="btn-open-new-chat" class="w-14 h-14 rounded-full bg-gradient-to-r from-yoko-primary to-yoko-secondary text-white flex items-center justify-center text-2xl shadow-[0_4px_20px_rgba(138,43,226,0.5)] active:scale-95 transition-transform">
+                        <i class="ph ph-chat-circle-text"></i>
                     </button>
                 </div>
             </div>
@@ -108,6 +119,74 @@
                         <i class="ph ph-plus text-xl text-gray-400 mb-2"></i>
                         <span class="text-sm font-semibold text-gray-300">Bientôt...</span>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: AJOUTER UN AMI -->
+        <div id="modal-add-friend" class="absolute inset-0 bg-yoko-bg z-[70] transform translate-y-full transition-transform duration-300 flex flex-col">
+            <div class="flex items-center gap-3 px-4 py-4 border-b border-white/5 bg-yoko-surface/80">
+                <button id="btn-close-add-friend" class="p-2 text-gray-400 hover:text-white"><i class="ph ph-caret-down text-2xl"></i></button>
+                <h2 class="flex-1 text-lg font-bold">Ajouter un ami</h2>
+                <button id="btn-open-qr" class="p-2 text-yoko-secondary"><i class="ph-fill ph-qr-code text-3xl"></i></button>
+            </div>
+            
+            <div class="p-4">
+                <div class="relative">
+                    <i class="ph ph-magnifying-glass absolute left-4 top-3.5 text-gray-400 text-lg"></i>
+                    <input id="search-friend-input" type="text" placeholder="Chercher un pseudo..." class="w-full bg-yoko-surface rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-yoko-primary border border-white/5">
+                </div>
+            </div>
+
+            <div class="flex border-b border-white/5 text-sm font-semibold">
+                <button id="tab-suggestions" class="flex-1 py-3 text-yoko-primary border-b-2 border-yoko-primary">Suggestions</button>
+                <button id="tab-requests" class="flex-1 py-3 text-gray-500 relative">
+                    Demandes <span id="badge-requests" class="hidden absolute top-2 right-4 bg-yoko-secondary text-yoko-bg text-xs rounded-full w-4 h-4 flex items-center justify-center">0</span>
+                </button>
+            </div>
+
+            <div id="add-friend-list" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <!-- Rempli par JS (Suggestions ou Demandes) -->
+            </div>
+        </div>
+
+        <!-- MODAL: NOUVEAU CHAT (Amis uniquement) -->
+        <div id="modal-new-chat" class="absolute inset-0 bg-yoko-bg/95 backdrop-blur-md z-[70] transform translate-y-full transition-transform duration-300 flex flex-col">
+            <div class="flex items-center justify-between p-5 border-b border-white/5">
+                <h2 class="text-xl font-bold">Lancer un Ping</h2>
+                <button id="btn-close-new-chat" class="text-gray-400"><i class="ph ph-x text-2xl"></i></button>
+            </div>
+            <div id="friends-list" class="flex-1 overflow-y-auto p-4 space-y-2">
+                <!-- Rempli par JS -->
+            </div>
+        </div>
+
+        <!-- MODAL: QR CODE (Scanner & Afficher) -->
+        <div id="modal-qr" class="absolute inset-0 bg-yoko-bg z-[80] transform translate-y-full transition-transform duration-300 flex flex-col">
+            <div class="flex items-center gap-3 px-4 py-4 border-b border-white/5">
+                <button id="btn-close-qr" class="p-2 text-gray-400 hover:text-white"><i class="ph ph-caret-down text-2xl"></i></button>
+                <h2 class="flex-1 text-lg font-bold text-center pr-8">QR Code</h2>
+            </div>
+            
+            <div class="flex flex-col flex-1 items-center justify-center p-8">
+                <!-- Zone Affichage QR -->
+                <div id="qr-display-zone" class="flex flex-col items-center w-full">
+                    <p class="text-gray-400 mb-8 text-center text-sm">Fais scanner ce code par un ami pour qu'il t'ajoute instantanément.</p>
+                    <div class="bg-white p-4 rounded-3xl shadow-[0_0_30px_rgba(138,43,226,0.3)]">
+                        <div id="my-qrcode"></div>
+                    </div>
+                    <button id="btn-switch-to-scan" class="mt-12 w-full py-4 rounded-xl bg-yoko-surface border border-yoko-primary/50 text-yoko-primary font-bold shadow-lg flex items-center justify-center gap-2">
+                        <i class="ph ph-camera text-xl"></i> Scanner un code
+                    </button>
+                </div>
+
+                <!-- Zone Scanner QR (Cachée par défaut) -->
+                <div id="qr-scan-zone" class="hidden flex-col items-center w-full h-full">
+                    <p class="text-gray-400 mb-4 text-center text-sm">Place le QR Code dans le cadre.</p>
+                    <div id="qr-reader" class="w-full max-w-sm overflow-hidden rounded-2xl border-2 border-yoko-secondary mb-8"></div>
+                    <button id="btn-switch-to-display" class="mt-auto w-full py-4 rounded-xl bg-yoko-surface text-white font-bold flex items-center justify-center gap-2">
+                        <i class="ph ph-arrow-left text-xl"></i> Revenir à mon code
+                    </button>
                 </div>
             </div>
         </div>
@@ -134,17 +213,6 @@
                 <button id="btn-send-message" class="w-12 h-12 rounded-full bg-yoko-secondary text-yoko-bg flex items-center justify-center text-xl font-bold">
                     <i class="ph-fill ph-paper-plane-right"></i>
                 </button>
-            </div>
-        </div>
-
-        <!-- MODAL: LISTE DES UTILISATEURS -->
-        <div id="modal-users" class="absolute inset-0 bg-yoko-bg/95 backdrop-blur-md z-[70] transform translate-y-full transition-transform duration-300 flex flex-col">
-            <div class="flex items-center justify-between p-5 border-b border-white/5">
-                <h2 class="text-xl font-bold">Trouver un ami</h2>
-                <button id="btn-close-users" class="text-gray-400"><i class="ph ph-x text-2xl"></i></button>
-            </div>
-            <div id="users-list" class="flex-1 overflow-y-auto p-4 space-y-2">
-                <!-- Rempli par JS -->
             </div>
         </div>
 
@@ -179,7 +247,7 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
-        // TA CONFIGURATION FIREBASE EXACTE
+        // CONFIGURATION FIREBASE YOKOS
         const firebaseConfig = {
             apiKey: "AIzaSyBwhGrenegcMuo5KJLGQgEtOYMw5qpTWOw",
             authDomain: "yoko-2796c.firebaseapp.com",
@@ -199,13 +267,16 @@
         let myProfile = null;
         let allUsers = {};
         let myChats = [];
+        let allFriendships = []; 
         let currentActiveChatId = null;
+        let currentAddFriendTab = 'suggestions'; // 'suggestions' or 'requests'
+        let html5QrcodeScanner = null;
 
-        // UI
+        // UI Refs
         const elScreenLogin = document.getElementById('screen-login');
         const elLoginError = document.getElementById('login-error');
         
-        // Compression Image Base64 Ultra-légère (Max 150px = ~10ko)
+        // Compression Image
         const compressImage = (file, maxWidth = 150) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -220,93 +291,79 @@
                         canvas.height = img.height * ratio;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.5)); // Qualité 0.5
+                        resolve(canvas.toDataURL('image/jpeg', 0.5));
                     };
                 };
             });
         };
 
-        // --- HACK AUTHENTIFICATION PSEUDO + PIN ---
-        // Firebase Auth demande un email/mdp. On transforme le pseudo en faux email.
         const formatCredentials = (pseudo, pin) => {
             const cleanPseudo = pseudo.toLowerCase().replace(/[^a-z0-9]/g, '');
             return {
-                email: `${cleanPseudo}@yoko.app`,
-                password: `${pin}yoko` // Doit faire 6 caractères mini pour Firebase
+                email: `${cleanPseudo}@yokos.app`,
+                password: `${pin}yokos`
             };
         };
 
-        // Inscription
+        // --- AUTHENTIFICATION ---
         document.getElementById('btn-register').onclick = async () => {
             const pseudo = document.getElementById('login-pseudo').value.trim();
             const pin = document.getElementById('login-pin').value.trim();
             
             if (pseudo.length < 3 || pin.length !== 4) {
                 elLoginError.innerText = "Erreur: Pseudo (3 char min) et PIN (4 chiffres) obligatoires.";
-                elLoginError.classList.remove('hidden');
-                return;
+                elLoginError.classList.remove('hidden'); return;
             }
-
             const creds = formatCredentials(pseudo, pin);
             try {
                 const userCred = await createUserWithEmailAndPassword(auth, creds.email, creds.password);
-                // Créer le document utilisateur public
                 await setDoc(doc(db, 'users', userCred.user.uid), {
                     uid: userCred.user.uid,
-                    pseudo: pseudo, // On garde la casse d'origine pour l'affichage
+                    pseudo: pseudo,
                     avatar: `https://placehold.co/150/1E1E1E/8A2BE2?text=${pseudo.charAt(0).toUpperCase()}`,
                     joinedAt: Date.now()
                 });
             } catch (err) {
-                console.error(err);
-                if (err.code === 'auth/configuration-not-found') {
-                    elLoginError.innerText = "Firebase: Va activer 'Email/Mot de passe' dans Firebase > Authentication.";
-                } else if (err.code === 'auth/email-already-in-use') {
-                    elLoginError.innerText = "Erreur: Ce pseudo est déjà utilisé.";
-                } else {
-                    elLoginError.innerText = "Erreur Firebase: " + err.message;
-                }
+                elLoginError.innerText = err.code === 'auth/email-already-in-use' ? "Ce pseudo est déjà utilisé." : "Erreur Firebase: " + err.message;
                 elLoginError.classList.remove('hidden');
             }
         };
 
-        // Connexion
         document.getElementById('btn-login').onclick = async () => {
             const pseudo = document.getElementById('login-pseudo').value.trim();
             const pin = document.getElementById('login-pin').value.trim();
-            
             if (!pseudo || !pin) return;
             const creds = formatCredentials(pseudo, pin);
             try {
                 await signInWithEmailAndPassword(auth, creds.email, creds.password);
             } catch (err) {
-                console.error(err);
-                if (err.code === 'auth/configuration-not-found') {
-                    elLoginError.innerText = "Firebase: L'authentification n'est pas activée sur ta console.";
-                } else {
-                    elLoginError.innerText = "Erreur: Pseudo ou code PIN incorrect.";
-                }
+                elLoginError.innerText = "Erreur: Pseudo ou code PIN incorrect.";
                 elLoginError.classList.remove('hidden');
             }
         };
 
-        // Déconnexion
         document.getElementById('btn-logout').onclick = () => signOut(auth);
 
-        // Ecouteur d'état d'authentification
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                // Récupérer le profil dans Firestore
                 const profileSnap = await getDoc(doc(db, 'users', user.uid));
                 if (profileSnap.exists()) {
                     myProfile = profileSnap.data();
-                    elScreenLogin.classList.add('-translate-y-full'); // Cacher l'écran de login
+                    elScreenLogin.classList.add('-translate-y-full');
                     
                     document.getElementById('header-avatar').src = myProfile.avatar;
                     document.getElementById('modal-avatar').src = myProfile.avatar;
                     document.getElementById('display-pseudo').innerText = myProfile.pseudo;
                     
+                    // Genérer mon QR Code
+                    document.getElementById('my-qrcode').innerHTML = "";
+                    new QRCode(document.getElementById("my-qrcode"), {
+                        text: user.uid,
+                        width: 200, height: 200,
+                        colorDark : "#8A2BE2", colorLight : "#ffffff",
+                    });
+
                     startDataListeners();
                 }
             } else {
@@ -316,33 +373,44 @@
             }
         });
 
-        // --- ECOUTEURS DE DONNEES (FIRESTORE) ---
+        // --- ECOUTEURS FIRESTORE ---
         const startDataListeners = () => {
-            // Liste des utilisateurs
+            // 1. Utilisateurs
             onSnapshot(collection(db, 'users'), (snapshot) => {
                 allUsers = {};
-                document.getElementById('users-list').innerHTML = '';
-                snapshot.forEach(d => {
-                    const u = d.data();
-                    allUsers[u.uid] = u;
-                    if (u.uid !== currentUser.uid) {
-                        const div = document.createElement('div');
-                        div.className = "flex items-center justify-between p-3 bg-yoko-surface/50 rounded-xl";
-                        div.innerHTML = `
-                            <div class="flex items-center gap-3">
-                                <img src="${u.avatar}" class="w-10 h-10 rounded-full border border-yoko-primary/30 object-cover">
-                                <span class="font-bold text-white">${u.pseudo}</span>
-                            </div>
-                            <button class="text-yoko-primary font-bold text-sm bg-yoko-primary/10 px-4 py-1.5 rounded-full hover:bg-yoko-primary hover:text-white transition">Message</button>
-                        `;
-                        div.querySelector('button').onclick = () => openOrCreateChat(u.uid);
-                        document.getElementById('users-list').appendChild(div);
-                    }
-                });
+                snapshot.forEach(d => allUsers[d.data().uid] = d.data());
+                renderAddFriendList();
+                renderFriendsList();
                 renderChats();
             });
 
-            // Liste de mes chats
+            // 2. Friendships (Demandes d'amis)
+            onSnapshot(collection(db, 'friendships'), (snapshot) => {
+                allFriendships = [];
+                let pendingCount = 0;
+
+                snapshot.forEach(d => {
+                    const f = d.data();
+                    allFriendships.push(f);
+                    if (f.status === 'pending' && f.participants.includes(currentUser.uid) && f.sender !== currentUser.uid) {
+                        pendingCount++;
+                    }
+                });
+
+                // Update Badge
+                const badge = document.getElementById('badge-requests');
+                if (pendingCount > 0) {
+                    badge.innerText = pendingCount;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+
+                renderAddFriendList();
+                renderFriendsList();
+            });
+
+            // 3. Chats
             onSnapshot(collection(db, 'chats'), (snapshot) => {
                 myChats = [];
                 snapshot.forEach(d => {
@@ -357,10 +425,167 @@
             });
         };
 
+        // --- LOGIQUE AMIS (Demandes & Suggestions) ---
+        const getFriendshipDocId = (uid1, uid2) => uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+
+        const getMyRelations = () => {
+            let friends = [], pendingReceived = [], pendingSent = [];
+            allFriendships.forEach(f => {
+                if (f.participants.includes(currentUser.uid)) {
+                    const otherUid = f.participants.find(id => id !== currentUser.uid);
+                    if (f.status === 'accepted') friends.push(otherUid);
+                    else if (f.status === 'pending') {
+                        if (f.sender === currentUser.uid) pendingSent.push(otherUid);
+                        else pendingReceived.push(otherUid);
+                    }
+                }
+            });
+            return { friends, pendingReceived, pendingSent };
+        };
+
+        const sendFriendRequest = async (targetUid) => {
+            if (targetUid === currentUser.uid) return alert("Tu ne peux pas t'ajouter toi-même.");
+            if (!allUsers[targetUid]) return alert("Utilisateur introuvable.");
+            
+            const docId = getFriendshipDocId(currentUser.uid, targetUid);
+            await setDoc(doc(db, 'friendships', docId), {
+                participants: [currentUser.uid, targetUid],
+                status: 'pending',
+                sender: currentUser.uid,
+                timestamp: Date.now()
+            });
+        };
+
+        const acceptFriendRequest = async (targetUid) => {
+            const docId = getFriendshipDocId(currentUser.uid, targetUid);
+            await updateDoc(doc(db, 'friendships', docId), { status: 'accepted' });
+        };
+
+        // Rendu de l'onglet "Ajouter un ami" (Suggestions ou Demandes)
+        const renderAddFriendList = () => {
+            const list = document.getElementById('add-friend-list');
+            list.innerHTML = '';
+            const searchQ = document.getElementById('search-friend-input').value.toLowerCase();
+            const rels = getMyRelations();
+
+            if (currentAddFriendTab === 'requests') {
+                // AFFICHER LES DEMANDES RECUES
+                if (rels.pendingReceived.length === 0) {
+                    list.innerHTML = '<p class="text-center text-gray-500 mt-4 text-sm">Aucune demande en attente.</p>';
+                    return;
+                }
+                rels.pendingReceived.forEach(uid => {
+                    const u = allUsers[uid];
+                    if (!u) return;
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between p-3 bg-yoko-surface/50 rounded-xl border border-white/5";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <img src="${u.avatar}" class="w-10 h-10 rounded-full border border-yoko-primary/30 object-cover">
+                            <span class="font-bold text-white">${u.pseudo}</span>
+                        </div>
+                        <button class="btn-accept text-yoko-bg font-bold text-sm bg-yoko-secondary px-4 py-1.5 rounded-full shadow-lg">Accepter</button>
+                    `;
+                    div.querySelector('.btn-accept').onclick = () => acceptFriendRequest(u.uid);
+                    list.appendChild(div);
+                });
+
+            } else {
+                // AFFICHER LES SUGGESTIONS (ou Recherche)
+                let usersToShow = [];
+                
+                Object.values(allUsers).forEach(u => {
+                    if (u.uid === currentUser.uid) return;
+                    if (rels.friends.includes(u.uid)) return; // Déjà ami
+                    if (rels.pendingReceived.includes(u.uid) || rels.pendingSent.includes(u.uid)) return; // Demande en cours
+
+                    // Calcul amis en commun
+                    let mutualCount = 0;
+                    allFriendships.forEach(f => {
+                        if (f.status === 'accepted' && f.participants.includes(u.uid)) {
+                            const theirFriend = f.participants.find(id => id !== u.uid);
+                            if (rels.friends.includes(theirFriend)) mutualCount++;
+                        }
+                    });
+
+                    // Si recherche active, on filtre par pseudo, sinon on trie par amis communs
+                    if (searchQ && !u.pseudo.toLowerCase().includes(searchQ)) return;
+                    
+                    usersToShow.push({ ...u, mutuals: mutualCount });
+                });
+
+                if (!searchQ) {
+                    // Trier par amis communs (décroissant)
+                    usersToShow.sort((a, b) => b.mutuals - a.mutuals);
+                    // Garder le top 10
+                    usersToShow = usersToShow.slice(0, 10);
+                }
+
+                if (usersToShow.length === 0) {
+                    list.innerHTML = '<p class="text-center text-gray-500 mt-4 text-sm">Aucun résultat.</p>';
+                    return;
+                }
+
+                usersToShow.forEach(u => {
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between p-3 bg-yoko-surface/50 rounded-xl border border-white/5";
+                    let subText = u.mutuals > 0 ? `<span class="text-xs text-yoko-secondary">${u.mutuals} ami(s) en commun</span>` : `<span class="text-xs text-gray-500">Nouveau sur Yokos</span>`;
+                    
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <img src="${u.avatar}" class="w-10 h-10 rounded-full border border-yoko-primary/30 object-cover">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-white leading-tight">${u.pseudo}</span>
+                                ${subText}
+                            </div>
+                        </div>
+                        <button class="btn-add text-yoko-primary font-bold text-sm bg-yoko-primary/10 px-4 py-1.5 rounded-full hover:bg-yoko-primary hover:text-white transition">Ajouter</button>
+                    `;
+                    div.querySelector('.btn-add').onclick = () => {
+                        sendFriendRequest(u.uid);
+                        div.querySelector('.btn-add').innerText = "Envoyé";
+                        div.querySelector('.btn-add').disabled = true;
+                        div.querySelector('.btn-add').classList.add('opacity-50');
+                    };
+                    list.appendChild(div);
+                });
+            }
+        };
+
+        document.getElementById('search-friend-input').addEventListener('input', renderAddFriendList);
+
+        // --- RENDU DES AMIS (Pour Nouveau Chat) ---
+        const renderFriendsList = () => {
+            const list = document.getElementById('friends-list');
+            list.innerHTML = '';
+            const rels = getMyRelations();
+            
+            if (rels.friends.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-500 mt-4 text-sm">Tu n\'as pas encore d\'amis. Va dans l\'onglet Ajouter !</p>';
+                return;
+            }
+
+            rels.friends.forEach(uid => {
+                const u = allUsers[uid];
+                if (!u) return;
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-3 bg-yoko-surface/50 rounded-xl cursor-pointer hover:bg-yoko-surface border border-white/5";
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <img src="${u.avatar}" class="w-10 h-10 rounded-full object-cover">
+                        <span class="font-bold text-white">${u.pseudo}</span>
+                    </div>
+                    <i class="ph-fill ph-chat-circle-text text-yoko-secondary text-xl"></i>
+                `;
+                div.onclick = () => openOrCreateChat(u.uid);
+                list.appendChild(div);
+            });
+        };
+
+        // --- RENDU DES CHATS EXISTANTS ---
         const renderChats = () => {
             const list = document.getElementById('chats-list');
             list.innerHTML = '';
-            
             if(myChats.length === 0) {
                 list.innerHTML = '<div class="text-center text-gray-500 mt-10">Aucune discussion en cours.</div>';
                 return;
@@ -389,7 +614,7 @@
         };
 
         const openOrCreateChat = async (targetUid) => {
-            document.getElementById('modal-users').classList.add('translate-y-full');
+            document.getElementById('modal-new-chat').classList.add('translate-y-full');
             let chat = myChats.find(c => c.participants.includes(targetUid));
             
             if (!chat) {
@@ -439,7 +664,6 @@
             const chatRef = doc(db, 'chats', currentActiveChatId);
             const currentChat = myChats.find(c => c.id === currentActiveChatId);
             
-            // On limite à 50 messages pour ne pas exploser la limite de 1Mo de Firestore par document
             let newMessages = [...(currentChat.messages || []), { senderId: currentUser.uid, text: text, type: type, timestamp: Date.now() }];
             if (newMessages.length > 50) newMessages = newMessages.slice(-50);
             
@@ -447,7 +671,7 @@
             await updateDoc(chatRef, { messages: newMessages, lastUpdate: Date.now() });
         };
 
-        // --- INTERACTIONS UI ---
+        // --- UI INTERACTIONS & MODALS ---
         document.getElementById('btn-send-message').onclick = () => {
             sendMessageToDB(document.getElementById('input-message').value);
             document.getElementById('input-message').value = '';
@@ -458,6 +682,7 @@
             sendMessageToDB('🚨 PING!', 'ping');
         };
 
+        // Tabs "Messages" / "Stories"
         const swipeContainer = document.getElementById('swipe-container');
         document.getElementById('tab-messages').onclick = () => swipeContainer.scrollTo({ left: 0, behavior: 'smooth' });
         document.getElementById('tab-stories').onclick = () => swipeContainer.scrollTo({ left: window.innerWidth, behavior: 'smooth' });
@@ -468,23 +693,75 @@
             document.getElementById('tab-stories').className = `cursor-pointer px-2 ${!isMsg ? 'text-white border-b-2 border-yoko-primary pb-1' : 'text-gray-500'}`;
         });
 
+        // Tabs "Ajouter Ami"
+        document.getElementById('tab-suggestions').onclick = () => {
+            currentAddFriendTab = 'suggestions';
+            document.getElementById('tab-suggestions').className = 'flex-1 py-3 text-yoko-primary border-b-2 border-yoko-primary';
+            document.getElementById('tab-requests').className = 'flex-1 py-3 text-gray-500 relative';
+            renderAddFriendList();
+        };
+        document.getElementById('tab-requests').onclick = () => {
+            currentAddFriendTab = 'requests';
+            document.getElementById('tab-requests').className = 'flex-1 py-3 text-yoko-primary border-b-2 border-yoko-primary relative';
+            document.getElementById('tab-suggestions').className = 'flex-1 py-3 text-gray-500';
+            renderAddFriendList();
+        };
+
+        // Ouverture / Fermeture Modals
         document.getElementById('btn-close-chat').onclick = () => document.getElementById('screen-chat').classList.add('translate-x-full');
-        document.getElementById('btn-open-users').onclick = () => document.getElementById('modal-users').classList.remove('translate-y-full');
-        document.getElementById('btn-close-users').onclick = () => document.getElementById('modal-users').classList.add('translate-y-full');
+        document.getElementById('btn-open-new-chat').onclick = () => document.getElementById('modal-new-chat').classList.remove('translate-y-full');
+        document.getElementById('btn-close-new-chat').onclick = () => document.getElementById('modal-new-chat').classList.add('translate-y-full');
+        document.getElementById('btn-open-add-friend').onclick = () => document.getElementById('modal-add-friend').classList.remove('translate-y-full');
+        document.getElementById('btn-close-add-friend').onclick = () => document.getElementById('modal-add-friend').classList.add('translate-y-full');
         document.getElementById('btn-open-profile').onclick = () => document.getElementById('profile-modal').classList.remove('translate-y-full');
         document.getElementById('btn-close-profile').onclick = () => document.getElementById('profile-modal').classList.add('translate-y-full');
 
+        // Gestion du QR Code
+        document.getElementById('btn-open-qr').onclick = () => {
+            document.getElementById('modal-add-friend').classList.add('translate-y-full'); // Fermer fond
+            document.getElementById('modal-qr').classList.remove('translate-y-full'); // Ouvrir QR
+        };
+        document.getElementById('btn-close-qr').onclick = () => {
+            document.getElementById('modal-qr').classList.add('translate-y-full');
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().catch(err => console.log(err)); // Eteindre camera
+            }
+        };
+
+        document.getElementById('btn-switch-to-scan').onclick = () => {
+            document.getElementById('qr-display-zone').classList.add('hidden');
+            document.getElementById('qr-scan-zone').classList.remove('hidden');
+            document.getElementById('qr-scan-zone').classList.add('flex');
+            
+            html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
+            html5QrcodeScanner.render(onScanSuccess);
+        };
+
+        document.getElementById('btn-switch-to-display').onclick = () => {
+            document.getElementById('qr-scan-zone').classList.add('hidden');
+            document.getElementById('qr-scan-zone').classList.remove('flex');
+            document.getElementById('qr-display-zone').classList.remove('hidden');
+            if (html5QrcodeScanner) html5QrcodeScanner.clear();
+        };
+
+        const onScanSuccess = (decodedText) => {
+            html5QrcodeScanner.clear(); // Eteindre caméra
+            sendFriendRequest(decodedText).then(() => {
+                alert("Demande envoyée !");
+                document.getElementById('btn-switch-to-display').click();
+            });
+        };
+
+        // Profil Update
         document.getElementById('file-avatar').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            const compressedBase64 = await compressImage(file, 150); // Compression ultra forte
-            document.getElementById('modal-avatar').src = compressedBase64;
+            document.getElementById('modal-avatar').src = await compressImage(file, 150);
         });
 
         document.getElementById('btn-save-profile').onclick = async () => {
             const newAvatar = document.getElementById('modal-avatar').src;
-            const profileRef = doc(db, 'users', currentUser.uid);
-            await updateDoc(profileRef, { avatar: newAvatar });
+            await updateDoc(doc(db, 'users', currentUser.uid), { avatar: newAvatar });
             myProfile.avatar = newAvatar;
             document.getElementById('header-avatar').src = newAvatar;
             document.getElementById('profile-modal').classList.add('translate-y-full');
