@@ -17,7 +17,6 @@
 
     <div id="app-wrapper" class="relative w-full h-[100dvh] sm:h-[850px] sm:w-[390px] sm:rounded-[40px] sm:border-[6px] sm:border-gray-800 bg-[#121212] text-white flex flex-col">
         
-        <!-- ÉCRAN CONNEXION AMÉLIORÉ -->
         <div id="screen-login" class="absolute inset-0 bg-[#121212] z-[100] flex flex-col items-center justify-center p-6">
             <i class="ph-fill ph-lightning text-[#8A2BE2] text-6xl mb-4"></i>
             <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#8A2BE2] to-[#00BFFF] mb-8">Yokos</h1>
@@ -32,29 +31,39 @@
                 </div>
             </div>
 
-            <!-- ZONE DE FEEDBACK CLAIRE -->
             <div id="login-feedback" class="mt-8 px-4 py-3 rounded-xl border border-transparent w-full max-w-sm text-center text-sm font-medium hidden">
-                <!-- Texte injecté dynamiquement -->
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
         import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-
-        // Initialisation Firebase via variables globales d'environnement
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
 
         const feedbackEl = document.getElementById('login-feedback');
         const pseudoInput = document.getElementById('login-pseudo');
         const pinInput = document.getElementById('login-pin');
 
-        // Authentification initiale automatique
+        let auth, db;
+
+        const initFirebase = () => {
+            try {
+                const configStr = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+                if (!configStr) throw new Error("Configuration Firebase manquante");
+                
+                const firebaseConfig = JSON.parse(configStr);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                initAuth();
+            } catch (e) {
+                console.error("Erreur critique Firebase:", e);
+                showFeedback("Erreur de connexion au serveur.");
+            }
+        };
+
         const initAuth = async () => {
           try {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -66,7 +75,6 @@
             console.error("Auth init error", e);
           }
         };
-        initAuth();
 
         function showFeedback(msg, type = 'error') {
             feedbackEl.innerText = msg;
@@ -77,6 +85,11 @@
         }
 
         async function handleAuth(isRegister) {
+            if (!auth) {
+                showFeedback("Système non initialisé.");
+                return;
+            }
+
             const pseudo = pseudoInput.value.trim().toLowerCase();
             const pin = pinInput.value.trim();
 
@@ -111,6 +124,8 @@
 
         document.getElementById('btn-register').onclick = () => handleAuth(true);
         document.getElementById('btn-login').onclick = () => handleAuth(false);
+
+        initFirebase();
     </script>
 </body>
 </html>
