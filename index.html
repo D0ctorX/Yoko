@@ -55,6 +55,27 @@
 
         /* Fix pour le scanner QR */
         #qr-reader video { border-radius: 1rem; object-fit: cover; }
+
+        /* Style des barres de défilement (Scrollbars) sombres pour Chrome, Edge, Safari & Windows */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #121212;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2D2D2D;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8A2BE2;
+        }
+        /* Pour Firefox */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #2D2D2D #121212;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen">
@@ -65,7 +86,7 @@
         <div id="screen-login" class="absolute inset-0 bg-yoko-bg z-[100] flex flex-col items-center justify-center p-6 transition-transform duration-500">
             <i class="ph-fill ph-lightning text-yoko-primary text-6xl mb-4 neon-glow-primary rounded-full"></i>
             <h1 class="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-yoko-primary to-yoko-secondary bg-clip-text text-transparent mb-2">Yokos</h1>
-            <p class="text-gray-400 text-center text-sm mb-10">Le réseau rapide. Zéro mail. Zéro trace.</p>
+            <p class="text-gray-400 text-center text-sm mb-10">Zéro mail. Zéro trace.</p>
             
             <div class="w-full space-y-4 max-w-sm">
                 <input id="login-pseudo" type="text" placeholder="Pseudo (sans espace)" class="w-full bg-yoko-surface border border-white/10 rounded-xl px-4 py-4 text-white font-medium focus:outline-none focus:border-yoko-primary text-center tracking-wider">
@@ -162,7 +183,7 @@
         <!-- MODAL: NOUVEAU CHAT (Amis uniquement) -->
         <div id="modal-new-chat" class="absolute inset-0 bg-yoko-bg/95 backdrop-blur-md z-[70] transform translate-y-full transition-transform duration-300 flex flex-col">
             <div class="flex items-center justify-between p-5 border-b border-white/5">
-                <h2 class="text-xl font-bold">Lancer un Ping</h2>
+                <h2 class="text-xl font-bold">Lancer un chat</h2>
                 <button id="btn-close-new-chat" class="text-gray-400"><i class="ph ph-x text-2xl"></i></button>
             </div>
             <div id="friends-list" class="flex-1 overflow-y-auto p-4 space-y-2">
@@ -257,7 +278,7 @@
                 </div>
                 <div class="flex-1">
                     <h3 class="font-extrabold text-white text-base">Installer Yokos</h3>
-                    <p class="text-gray-400 text-xs mt-1">Ajoute l'app sur ton écran pour recevoir les notifications et t'en servir comme une vraie appli !</p>
+                    <p class="text-gray-400 text-xs mt-1">Ajoute l'app sur ton écran pour l'ouvrir d'un clic, recevoir les notifs et chatter à fond.</p>
                 </div>
                 <button id="btn-close-pwa-modal" class="text-gray-400 hover:text-white p-1">
                     <i class="ph ph-x text-lg"></i>
