@@ -597,18 +597,39 @@
         const renderChats = () => {
             const list = document.getElementById('chats-list');
             list.innerHTML = '';
-            if(myChats.length === 0) {
-                list.innerHTML = '<div class="text-center text-gray-500 mt-10">Aucune discussion en cours.</div>';
+            
+            if (!currentUser) return;
+            const rels = getMyRelations();
+            
+            if(rels.friends.length === 0) {
+                list.innerHTML = '<div class="text-center text-gray-500 mt-10">Ajoute des amis pour commencer à discuter !</div>';
                 return;
             }
 
-            myChats.forEach(chat => {
-                const otherUid = chat.participants.find(id => id !== currentUser.uid);
-                const otherUser = allUsers[otherUid] || { pseudo: 'Inconnu', avatar: 'https://placehold.co/100/333/FFF?text=?' };
+            // Créer une liste combinant tous les amis et leurs chats éventuels
+            let displayList = rels.friends.map(friendUid => {
+                const chat = myChats.find(c => c.participants.includes(friendUid));
+                return {
+                    friendUid: friendUid,
+                    chat: chat,
+                    lastUpdate: chat ? (chat.lastUpdate || 0) : 0
+                };
+            });
+
+            // Trier par date de dernier message (les conversations actives en haut)
+            displayList.sort((a, b) => b.lastUpdate - a.lastUpdate);
+
+            displayList.forEach(item => {
+                const otherUser = allUsers[item.friendUid];
+                if (!otherUser) return;
                 
-                const lastMsg = chat.messages && chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : { text: 'Nouveau chat', type: 'text' };
+                const chat = item.chat;
+                const lastMsg = (chat && chat.messages && chat.messages.length > 0) 
+                    ? chat.messages[chat.messages.length - 1] 
+                    : { text: 'Nouvelle discussion', type: 'text' };
+                    
                 const isPing = lastMsg.type === 'ping';
-                let msgPreview = lastMsg.senderId === currentUser.uid ? 'Vous: ' + lastMsg.text : lastMsg.text;
+                let msgPreview = (chat && lastMsg.senderId === currentUser.uid) ? 'Vous: ' + lastMsg.text : lastMsg.text;
 
                 const div = document.createElement('div');
                 div.className = "flex items-center gap-4 p-3 rounded-2xl bg-yoko-surface/40 hover:bg-yoko-surface transition cursor-pointer border border-white/5";
@@ -619,7 +640,8 @@
                         <p class="text-sm truncate font-medium ${isPing ? 'text-yoko-primary' : 'text-gray-400'}">${msgPreview}</p>
                     </div>
                 `;
-                div.onclick = () => openChatView(chat, otherUser);
+                // Clique sur l'ami = Ouvre le chat existant ou le crée à la volée !
+                div.onclick = () => openOrCreateChat(item.friendUid);
                 list.appendChild(div);
             });
         };
