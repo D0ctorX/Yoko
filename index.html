@@ -393,6 +393,10 @@
                 renderAddFriendList();
                 renderFriendsList();
                 renderChats();
+            }, (error) => {
+                console.error("Erreur users snapshot:", error);
+                elLoginError.innerText = "Erreur de base de données (lecture utilisateurs).";
+                elLoginError.classList.remove('hidden');
             });
 
             // 2. Friendships (Demandes d'amis)
@@ -419,6 +423,8 @@
 
                 renderAddFriendList();
                 renderFriendsList();
+            }, (error) => {
+                console.error("Erreur friendships snapshot:", error);
             });
 
             // 3. Chats (Avec synchronisation active en direct)
@@ -440,6 +446,12 @@
                     if (activeChat) {
                         renderMessages(activeChat.messages || []);
                     }
+                }
+            }, (error) => {
+                console.error("Erreur chats snapshot:", error);
+                // Si la règle bloque, on prévient l'admin/dev
+                if (error.code === 'permission-denied') {
+                    console.warn("Rappel : Tu dois mettre à jour tes règles Firestore pour autoriser la lecture globale aux utilisateurs connectés.");
                 }
             });
         };
@@ -601,7 +613,7 @@
             });
         };
 
-        // --- RENDU DES CHATS EXISTANTS ---
+        // --- RENDU DES CHATS EXISTANTS (Affichage des amis d'office) ---
         const renderChats = () => {
             const list = document.getElementById('chats-list');
             list.innerHTML = '';
@@ -609,7 +621,7 @@
             if (!currentUser) return;
             const rels = getMyRelations();
             
-            if(rels.friends.length === 0) {
+            if (rels.friends.length === 0) {
                 list.innerHTML = '<div class="text-center text-gray-500 mt-10">Ajoute des amis pour commencer à discuter !</div>';
                 return;
             }
