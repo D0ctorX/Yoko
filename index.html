@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Yokos</title>
     
+    <!-- Meta tags pour PWA (iOS Support) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Yokos">
+    <link rel="apple-touch-icon" href="https://placehold.co/192/8A2BE2/ffffff?text=Y">
+    
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -199,7 +205,8 @@
                 <div class="flex-1 min-w-0">
                     <h3 id="chat-header-name" class="font-bold text-white truncate">...</h3>
                 </div>
-                <button id="btn-send-ping" class="w-10 h-10 rounded-full bg-yoko-primary/20 text-yoko-primary flex items-center justify-center border border-yoko-primary/50 shadow-[0_0_10px_rgba(138,43,226,0.3)] active:bg-yoko-primary active:text-white transition">
+                <!-- Bouton de Ping désactivé temporairement -->
+                <button id="btn-send-ping" class="w-10 h-10 rounded-full bg-yoko-surface text-gray-500 flex items-center justify-center border border-white/10 opacity-40 cursor-not-allowed transition" title="Pings désactivés pour le moment">
                     <i class="ph-fill ph-lightning text-xl"></i>
                 </button>
             </div>
@@ -235,6 +242,39 @@
                 <div class="w-full space-y-4 text-center">
                     <h3 id="display-pseudo" class="text-2xl font-bold uppercase tracking-wider text-yoko-secondary"></h3>
                     <button id="btn-logout" class="mt-8 px-6 py-2 border border-red-500/50 text-red-400 rounded-full text-sm font-semibold hover:bg-red-500/10 transition">Déconnexion</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL / BANNIÈRE D'INSTALLATION PWA -->
+        <div id="pwa-install-modal" class="absolute bottom-0 inset-x-0 bg-yoko-surface/95 backdrop-blur-md border-t border-yoko-primary/30 z-[110] transform translate-y-full transition-transform duration-500 p-6 rounded-t-[30px] flex flex-col gap-4">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-yoko-primary to-yoko-secondary flex items-center justify-center text-white text-2xl shadow-lg shadow-yoko-primary/30">
+                    <i class="ph-fill ph-lightning"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-extrabold text-white text-base">Installer Yokos</h3>
+                    <p class="text-gray-400 text-xs mt-1">Ajoute l'app sur ton écran pour recevoir les notifications et t'en servir comme une vraie appli !</p>
+                </div>
+                <button id="btn-close-pwa-modal" class="text-gray-400 hover:text-white p-1">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Bouton pour Android & Windows Chrome -->
+            <button id="btn-pwa-install-action" class="w-full py-3.5 bg-gradient-to-r from-yoko-primary to-yoko-secondary rounded-xl font-bold text-sm shadow-md active:scale-98 transition">
+                Installer gratuitement
+            </button>
+
+            <!-- Message d'instructions uniquement pour iOS/iPhone -->
+            <div id="pwa-ios-instructions" class="hidden flex-col bg-white/5 border border-white/10 rounded-xl p-3 text-xs gap-2 text-gray-300">
+                <div class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-yoko-secondary/20 text-yoko-secondary flex items-center justify-center font-bold">1</span>
+                    <span>Clique sur le bouton de partage <i class="ph ph-export text-yoko-secondary inline"></i> de ton navigateur Safari.</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-yoko-secondary/20 text-yoko-secondary flex items-center justify-center font-bold">2</span>
+                    <span>Défile vers le bas puis sélectionne <strong class="text-white">Sur l'écran d'accueil</strong>.</span>
                 </div>
             </div>
         </div>
@@ -732,9 +772,11 @@
             document.getElementById('input-message').value = '';
         };
 
-        document.getElementById('btn-send-ping').onclick = () => {
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]); 
-            sendMessageToDB('🚨 PING!', 'ping');
+        // Fonction des Pings suspendue/désactivée
+        document.getElementById('btn-send-ping').onclick = (e) => {
+            e.preventDefault();
+            // Desactivé pour l'instant : pas d'action ni d'envoi.
+            // On peut optionnellement ajouter un petit toast visuel si besoin
         };
 
         // Tabs "Messages" / "Stories"
@@ -820,6 +862,67 @@
             myProfile.avatar = newAvatar;
             document.getElementById('header-avatar').src = newAvatar;
             document.getElementById('profile-modal').classList.add('translate-y-full');
+        };
+
+        // ============================================================================
+        // LOGIQUE D'INSTALLATION DE LA PWA (ANDROID, WINDOWS, IOS)
+        // ============================================================================
+        let deferredPrompt;
+        const pwaInstallModal = document.getElementById('pwa-install-modal');
+        const btnPwaAction = document.getElementById('btn-pwa-install-action');
+        const iosInstructions = document.getElementById('pwa-ios-instructions');
+
+        // Détecter si l'application tourne déjà en mode autonome (déjà installée)
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+
+        // Détecter iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        // Ecouter l'événement d'installation natif de Google Chrome/Android/Windows
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Empêcher l'affichage automatique natif par défaut
+            e.preventDefault();
+            // Stocker l'événement pour le lancer plus tard
+            deferredPrompt = e;
+            
+            // Si l'application n'est pas déjà installée, afficher notre modal personnalisé
+            if (!isStandalone) {
+                setTimeout(() => {
+                    pwaInstallModal.classList.remove('translate-y-full');
+                }, 2000); // Apparaît 2 secondes après le chargement
+            }
+        });
+
+        // Gestion de l'affichage manuel pour iOS si non autonome
+        window.addEventListener('load', () => {
+            if (isIOS && !isStandalone) {
+                // Configurer le modal pour les instructions iOS
+                btnPwaAction.classList.add('hidden'); // Cacher le bouton d'installation automatique incompatible
+                iosInstructions.classList.remove('hidden'); // Afficher les étapes manuelles
+                iosInstructions.classList.add('flex');
+                
+                setTimeout(() => {
+                    pwaInstallModal.classList.remove('translate-y-full');
+                }, 2000);
+            }
+        });
+
+        // Clic sur l'action d'installation (Android / Windows)
+        btnPwaAction.onclick = async () => {
+            if (!deferredPrompt) return;
+            // Cacher notre modal
+            pwaInstallModal.classList.add('translate-y-full');
+            // Déclencher le prompt natif du navigateur Chrome
+            deferredPrompt.prompt();
+            // Attendre la réponse de l'utilisateur
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to install prompt: ${outcome}`);
+            deferredPrompt = null;
+        };
+
+        // Fermer le modal
+        document.getElementById('btn-close-pwa-modal').onclick = () => {
+            pwaInstallModal.classList.add('translate-y-full');
         };
 
     </script>
