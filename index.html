@@ -421,7 +421,7 @@
                 renderFriendsList();
             });
 
-            // 3. Chats
+            // 3. Chats (Avec synchronisation active en direct)
             onSnapshot(collection(db, 'chats'), (snapshot) => {
                 myChats = [];
                 snapshot.forEach(d => {
@@ -433,6 +433,14 @@
                 });
                 myChats.sort((a, b) => (b.lastUpdate || 0) - (a.lastUpdate || 0));
                 renderChats();
+
+                // Correctif crucial : Si un chat est actuellement ouvert, on met à jour ses messages en direct !
+                if (currentActiveChatId) {
+                    const activeChat = myChats.find(c => c.id === currentActiveChatId);
+                    if (activeChat) {
+                        renderMessages(activeChat.messages || []);
+                    }
+                }
             });
         };
 
@@ -659,6 +667,7 @@
                     lastUpdate: Date.now()
                 };
                 await setDoc(newChatRef, chat);
+                myChats.push(chat); // Ajout local immédiat pour éviter les délais de snapshot asynchrones
             }
             openChatView(chat, allUsers[targetUid]);
         };
@@ -697,7 +706,8 @@
             const chatRef = doc(db, 'chats', currentActiveChatId);
             const currentChat = myChats.find(c => c.id === currentActiveChatId);
             
-            let newMessages = [...(currentChat.messages || []), { senderId: currentUser.uid, text: text, type: type, timestamp: Date.now() }];
+            const existingMessages = currentChat ? (currentChat.messages || []) : [];
+            let newMessages = [...existingMessages, { senderId: currentUser.uid, text: text, type: type, timestamp: Date.now() }];
             if (newMessages.length > 50) newMessages = newMessages.slice(-50);
             
             renderMessages(newMessages); 
