@@ -324,8 +324,19 @@
                     joinedAt: Date.now()
                 });
             } catch (err) {
-                elLoginError.innerText = err.code === 'auth/email-already-in-use' ? "Ce pseudo est déjà utilisé." : "Erreur Firebase: " + err.message;
-                elLoginError.classList.remove('hidden');
+                if (err.code === 'auth/email-already-in-use') {
+                    // ASTUCE UX : Le mec s'est trompé de bouton, on le connecte direct !
+                    try {
+                        await signInWithEmailAndPassword(auth, creds.email, creds.password);
+                        elLoginError.classList.add('hidden'); // Succès silencieux
+                    } catch (loginErr) {
+                        elLoginError.innerText = "Ce pseudo est déjà réservé. Mauvais code PIN pour t'y connecter.";
+                        elLoginError.classList.remove('hidden');
+                    }
+                } else {
+                    elLoginError.innerText = "Erreur Firebase: " + err.message;
+                    elLoginError.classList.remove('hidden');
+                }
             }
         };
 
