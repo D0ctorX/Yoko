@@ -180,14 +180,55 @@
             </div>
         </div>
 
-        <!-- MODAL: NOUVEAU CHAT (Amis uniquement) -->
+        <!-- MODAL: NOUVEAU CHAT (Contacts sans conversation & Création de Groupe) -->
         <div id="modal-new-chat" class="absolute inset-0 bg-yoko-bg/95 backdrop-blur-md z-[70] transform translate-y-full transition-transform duration-300 flex flex-col">
             <div class="flex items-center justify-between p-5 border-b border-white/5">
+                <button id="btn-close-new-chat" class="text-gray-400"><i class="ph ph-arrow-left text-2xl"></i></button>
                 <h2 class="text-xl font-bold">Lancer un chat</h2>
-                <button id="btn-close-new-chat" class="text-gray-400"><i class="ph ph-x text-2xl"></i></button>
+                <div class="w-8"></div>
             </div>
-            <div id="friends-list" class="flex-1 overflow-y-auto p-4 space-y-2">
-                <!-- Rempli par JS -->
+            <div class="p-4 border-b border-white/5">
+                <button id="btn-open-create-group" class="w-full py-3.5 bg-yoko-surface rounded-xl text-yoko-primary font-bold flex items-center justify-center gap-2 hover:bg-yoko-surface/80 transition">
+                    <i class="ph-fill ph-users-three text-2xl"></i> Créer un groupe
+                </button>
+            </div>
+            <div class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Contacts disponibles</div>
+            <div id="friends-list" class="flex-1 overflow-y-auto p-4 pt-0 space-y-2">
+                <!-- Rempli par JS (Amis avec qui on n'a PAS de chat direct actif) -->
+            </div>
+        </div>
+
+        <!-- MODAL: CRÉER UN GROUPE -->
+        <div id="modal-create-group" class="absolute inset-0 bg-yoko-bg z-[75] transform translate-y-full transition-transform duration-300 flex flex-col">
+            <div class="flex items-center justify-between p-5 border-b border-white/5 bg-yoko-surface/80 backdrop-blur-md">
+                <button id="btn-close-create-group" class="text-gray-400"><i class="ph ph-arrow-left text-2xl"></i></button>
+                <h2 class="text-xl font-bold">Nouveau Groupe</h2>
+                <button id="btn-confirm-create-group" class="text-yoko-primary font-bold text-sm">Créer</button>
+            </div>
+            <div class="p-4 border-b border-white/5">
+                <input id="group-name-input" type="text" placeholder="Nom du groupe..." class="w-full bg-yoko-surface rounded-xl px-4 py-4 text-white font-bold focus:outline-none focus:border-yoko-primary border border-white/5 text-lg">
+            </div>
+            <div class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Sélectionner des membres</div>
+            <div id="group-friends-list" class="flex-1 overflow-y-auto p-4 pt-0 space-y-2">
+                <!-- Liste des amis avec cases à cocher (JS) -->
+            </div>
+        </div>
+
+        <!-- MODAL: INFO GROUPE -->
+        <div id="modal-group-info" class="absolute inset-0 bg-yoko-bg z-[80] transform translate-y-full transition-transform duration-300 flex flex-col">
+            <div class="flex items-center justify-between p-5 border-b border-white/5">
+                <button id="btn-close-group-info" class="text-gray-400"><i class="ph ph-arrow-left text-2xl"></i></button>
+                <h2 class="text-xl font-bold">Infos du groupe</h2>
+                <div class="w-8"></div>
+            </div>
+            <div class="flex flex-col items-center p-6 border-b border-white/5 bg-yoko-surface/30">
+                <img id="group-info-avatar" src="" class="w-24 h-24 rounded-full mb-4 object-cover shadow-[0_0_20px_rgba(138,43,226,0.3)]">
+                <h3 id="group-info-name" class="text-2xl font-bold text-white text-center"></h3>
+                <p id="group-info-count" class="text-gray-400 text-sm mt-1"></p>
+            </div>
+            <div class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Participants</div>
+            <div id="group-info-members" class="flex-1 overflow-y-auto p-4 pt-0 space-y-3">
+                <!-- Rempli par JS avec Badges Admin -->
             </div>
         </div>
 
@@ -223,19 +264,25 @@
 
         <!-- ÉCRAN: SALON DE DISCUSSION -->
         <div id="screen-chat" class="absolute inset-0 bg-yoko-bg z-[60] flex flex-col transform translate-x-full transition-transform duration-300">
-            <div class="flex items-center gap-3 px-4 py-4 border-b border-white/5 bg-yoko-surface/80 backdrop-blur-md">
+            <div class="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-yoko-surface/80 backdrop-blur-md">
                 <button id="btn-close-chat" class="p-2 text-gray-400 hover:text-white"><i class="ph ph-caret-left text-2xl"></i></button>
-                <img id="chat-header-avatar" src="" class="w-10 h-10 rounded-full object-cover">
-                <div class="flex-1 min-w-0">
-                    <h3 id="chat-header-name" class="font-bold text-white truncate">...</h3>
+                
+                <!-- Zone cliquable pour voir les infos du groupe/profil -->
+                <div id="chat-header-info-trigger" class="flex items-center gap-3 flex-1 min-w-0 cursor-pointer p-1 rounded-xl hover:bg-white/5 transition">
+                    <img id="chat-header-avatar" src="" class="w-10 h-10 rounded-full object-cover">
+                    <div class="flex flex-col min-w-0">
+                        <h3 id="chat-header-name" class="font-bold text-white truncate leading-tight">...</h3>
+                        <p id="chat-header-subtitle" class="text-xs text-gray-400 truncate hidden">Appuyer pour les infos</p>
+                    </div>
                 </div>
+
                 <!-- Bouton de Ping désactivé temporairement -->
                 <button id="btn-send-ping" class="w-10 h-10 rounded-full bg-yoko-surface text-gray-500 flex items-center justify-center border border-white/10 opacity-40 cursor-not-allowed transition" title="Pings désactivés pour le moment">
                     <i class="ph-fill ph-lightning text-xl"></i>
                 </button>
             </div>
             
-            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 flex flex-col">
                 <!-- Rempli par JS -->
             </div>
 
@@ -285,12 +332,10 @@
                 </button>
             </div>
             
-            <!-- Bouton pour Android & Windows Chrome -->
             <button id="btn-pwa-install-action" class="w-full py-3.5 bg-gradient-to-r from-yoko-primary to-yoko-secondary rounded-xl font-bold text-sm shadow-md active:scale-98 transition">
                 Installer gratuitement
             </button>
 
-            <!-- Message d'instructions uniquement pour iOS/iPhone -->
             <div id="pwa-ios-instructions" class="hidden flex-col bg-white/5 border border-white/10 rounded-xl p-3 text-xs gap-2 text-gray-300">
                 <div class="flex items-center gap-2">
                     <span class="w-5 h-5 rounded-full bg-yoko-secondary/20 text-yoko-secondary flex items-center justify-center font-bold">1</span>
@@ -311,7 +356,6 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
-        // CONFIGURATION FIREBASE YOKOS
         const firebaseConfig = {
             apiKey: "AIzaSyBwhGrenegcMuo5KJLGQgEtOYMw5qpTWOw",
             authDomain: "yoko-2796c.firebaseapp.com",
@@ -333,14 +377,13 @@
         let myChats = [];
         let allFriendships = []; 
         let currentActiveChatId = null;
-        let currentAddFriendTab = 'suggestions'; // 'suggestions' or 'requests'
+        let currentAddFriendTab = 'suggestions'; 
         let html5QrcodeScanner = null;
+        let selectedGroupMembers = []; // Pour la création de groupes
 
-        // UI Refs
         const elScreenLogin = document.getElementById('screen-login');
         const elLoginError = document.getElementById('login-error');
         
-        // Compression Image
         const compressImage = (file, maxWidth = 150) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -369,7 +412,6 @@
             };
         };
 
-        // --- AUTHENTIFICATION ---
         document.getElementById('btn-register').onclick = async () => {
             const pseudo = document.getElementById('login-pseudo').value.trim();
             const pin = document.getElementById('login-pin').value.trim();
@@ -389,10 +431,9 @@
                 });
             } catch (err) {
                 if (err.code === 'auth/email-already-in-use') {
-                    // ASTUCE UX : Le mec s'est trompé de bouton, on le connecte direct !
                     try {
                         await signInWithEmailAndPassword(auth, creds.email, creds.password);
-                        elLoginError.classList.add('hidden'); // Succès silencieux
+                        elLoginError.classList.add('hidden'); 
                     } catch (loginErr) {
                         elLoginError.innerText = "Ce pseudo est déjà réservé. Mauvais code PIN pour t'y connecter.";
                         elLoginError.classList.remove('hidden');
@@ -431,7 +472,6 @@
                     document.getElementById('modal-avatar').src = myProfile.avatar;
                     document.getElementById('display-pseudo').innerText = myProfile.pseudo;
                     
-                    // Genérer mon QR Code
                     document.getElementById('my-qrcode').innerHTML = "";
                     new QRCode(document.getElementById("my-qrcode"), {
                         text: user.uid,
@@ -448,22 +488,14 @@
             }
         });
 
-        // --- ECOUTEURS FIRESTORE ---
         const startDataListeners = () => {
-            // 1. Utilisateurs
             onSnapshot(collection(db, 'users'), (snapshot) => {
                 allUsers = {};
                 snapshot.forEach(d => allUsers[d.data().uid] = d.data());
                 renderAddFriendList();
-                renderFriendsList();
                 renderChats();
-            }, (error) => {
-                console.error("Erreur users snapshot:", error);
-                elLoginError.innerText = "Erreur de base de données (lecture utilisateurs).";
-                elLoginError.classList.remove('hidden');
             });
 
-            // 2. Friendships (Demandes d'amis)
             onSnapshot(collection(db, 'friendships'), (snapshot) => {
                 allFriendships = [];
                 let pendingCount = 0;
@@ -476,7 +508,6 @@
                     }
                 });
 
-                // Update Badge
                 const badge = document.getElementById('badge-requests');
                 if (pendingCount > 0) {
                     badge.innerText = pendingCount;
@@ -486,12 +517,9 @@
                 }
 
                 renderAddFriendList();
-                renderFriendsList();
-            }, (error) => {
-                console.error("Erreur friendships snapshot:", error);
+                renderChats(); // Rafraichit aussi la liste de la page d'accueil si nouveau contact
             });
 
-            // 3. Chats (Avec synchronisation active en direct)
             onSnapshot(collection(db, 'chats'), (snapshot) => {
                 myChats = [];
                 snapshot.forEach(d => {
@@ -504,23 +532,15 @@
                 myChats.sort((a, b) => (b.lastUpdate || 0) - (a.lastUpdate || 0));
                 renderChats();
 
-                // Correctif crucial : Si un tchat est actuellement ouvert, on met à jour ses messages en direct !
                 if (currentActiveChatId) {
                     const activeChat = myChats.find(c => c.id === currentActiveChatId);
                     if (activeChat) {
-                        renderMessages(activeChat.messages || []);
+                        renderMessages(activeChat.messages || [], activeChat);
                     }
-                }
-            }, (error) => {
-                console.error("Erreur chats snapshot:", error);
-                // Si la règle bloque, on prévient l'admin/dev
-                if (error.code === 'permission-denied') {
-                    console.warn("Rappel : Tu dois mettre à jour tes règles Firestore pour autoriser la lecture globale aux utilisateurs connectés.");
                 }
             });
         };
 
-        // --- LOGIQUE AMIS (Demandes & Suggestions) ---
         const getFriendshipDocId = (uid1, uid2) => uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
 
         const getMyRelations = () => {
@@ -539,9 +559,7 @@
         };
 
         const sendFriendRequest = async (targetUid) => {
-            if (targetUid === currentUser.uid) return alert("Tu ne peux pas t'ajouter toi-même.");
-            if (!allUsers[targetUid]) return alert("Utilisateur introuvable.");
-            
+            if (targetUid === currentUser.uid) return;
             const docId = getFriendshipDocId(currentUser.uid, targetUid);
             await setDoc(doc(db, 'friendships', docId), {
                 participants: [currentUser.uid, targetUid],
@@ -556,7 +574,6 @@
             await updateDoc(doc(db, 'friendships', docId), { status: 'accepted' });
         };
 
-        // Rendu de l'onglet "Ajouter un ami" (Suggestions ou Demandes)
         const renderAddFriendList = () => {
             const list = document.getElementById('add-friend-list');
             list.innerHTML = '';
@@ -564,7 +581,6 @@
             const rels = getMyRelations();
 
             if (currentAddFriendTab === 'requests') {
-                // AFFICHER LES DEMANDES RECUES
                 if (rels.pendingReceived.length === 0) {
                     list.innerHTML = '<p class="text-center text-gray-500 mt-4 text-sm">Aucune demande en attente.</p>';
                     return;
@@ -584,17 +600,13 @@
                     div.querySelector('.btn-accept').onclick = () => acceptFriendRequest(u.uid);
                     list.appendChild(div);
                 });
-
             } else {
-                // AFFICHER LES SUGGESTIONS (ou Recherche)
                 let usersToShow = [];
-                
                 Object.values(allUsers).forEach(u => {
                     if (u.uid === currentUser.uid) return;
-                    if (rels.friends.includes(u.uid)) return; // Déjà ami
-                    if (rels.pendingReceived.includes(u.uid) || rels.pendingSent.includes(u.uid)) return; // Demande en cours
+                    if (rels.friends.includes(u.uid)) return; 
+                    if (rels.pendingReceived.includes(u.uid) || rels.pendingSent.includes(u.uid)) return; 
 
-                    // Calcul amis en commun
                     let mutualCount = 0;
                     allFriendships.forEach(f => {
                         if (f.status === 'accepted' && f.participants.includes(u.uid)) {
@@ -603,16 +615,12 @@
                         }
                     });
 
-                    // Si recherche active, on filtre par pseudo, sinon on trie par amis communs
                     if (searchQ && !u.pseudo.toLowerCase().includes(searchQ)) return;
-                    
                     usersToShow.push({ ...u, mutuals: mutualCount });
                 });
 
                 if (!searchQ) {
-                    // Trier par amis communs (décroissant)
                     usersToShow.sort((a, b) => b.mutuals - a.mutuals);
-                    // Garder le top 10
                     usersToShow = usersToShow.slice(0, 10);
                 }
 
@@ -625,7 +633,6 @@
                     const div = document.createElement('div');
                     div.className = "flex items-center justify-between p-3 bg-yoko-surface/50 rounded-xl border border-white/5";
                     let subText = u.mutuals > 0 ? `<span class="text-xs text-yoko-secondary">${u.mutuals} ami(s) en commun</span>` : `<span class="text-xs text-gray-500">Nouveau sur Yokos</span>`;
-                    
                     div.innerHTML = `
                         <div class="flex items-center gap-3">
                             <img src="${u.avatar}" class="w-10 h-10 rounded-full border border-yoko-primary/30 object-cover">
@@ -649,18 +656,24 @@
 
         document.getElementById('search-friend-input').addEventListener('input', renderAddFriendList);
 
-        // --- RENDU DES AMIS (Pour Nouveau Chat) ---
-        const renderFriendsList = () => {
+        // --- RENDU "NOUVEAU CHAT" (Contacts avec qui tu n'as JAMAIS parlé) ---
+        const renderFriendsNoChatList = () => {
             const list = document.getElementById('friends-list');
             list.innerHTML = '';
             const rels = getMyRelations();
             
-            if (rels.friends.length === 0) {
-                list.innerHTML = '<p class="text-center text-gray-500 mt-4 text-sm">Tu n\'as pas encore d\'amis. Va dans l\'onglet Ajouter !</p>';
+            // Filtre les amis pour ne garder QUE ceux avec qui on n'a PAS de chat direct (1v1)
+            const friendsNoChat = rels.friends.filter(uid => {
+                const existingChat = myChats.find(c => (!c.type || c.type === 'direct') && c.participants.length === 2 && c.participants.includes(uid));
+                return !existingChat;
+            });
+
+            if (friendsNoChat.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-500 mt-4 text-sm">Tu as déjà une discussion active avec tous tes contacts.</p>';
                 return;
             }
 
-            rels.friends.forEach(uid => {
+            friendsNoChat.forEach(uid => {
                 const u = allUsers[uid];
                 if (!u) return;
                 const div = document.createElement('div');
@@ -677,7 +690,87 @@
             });
         };
 
-        // --- RENDU DES CHATS EXISTANTS (Affichage des amis d'office) ---
+        // --- CRÉATION DE GROUPE ---
+        document.getElementById('btn-open-create-group').onclick = () => {
+            document.getElementById('modal-create-group').classList.remove('translate-y-full');
+            renderGroupFriendsSelection();
+        };
+
+        document.getElementById('btn-close-create-group').onclick = () => {
+            document.getElementById('modal-create-group').classList.add('translate-y-full');
+        };
+
+        const renderGroupFriendsSelection = () => {
+            selectedGroupMembers = []; // Réinitialise
+            const list = document.getElementById('group-friends-list');
+            list.innerHTML = '';
+            const rels = getMyRelations();
+
+            if(rels.friends.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-500 mt-4 text-sm">Tu dois avoir des amis pour créer un groupe.</p>';
+                return;
+            }
+
+            rels.friends.forEach(uid => {
+                const u = allUsers[uid];
+                if(!u) return;
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-3 bg-yoko-surface/50 rounded-xl cursor-pointer hover:bg-yoko-surface/80 border border-white/5";
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <img src="${u.avatar}" class="w-10 h-10 rounded-full object-cover">
+                        <span class="font-bold text-white">${u.pseudo}</span>
+                    </div>
+                    <div class="w-6 h-6 rounded-full border-2 border-gray-500 flex items-center justify-center toggle-checkbox transition-colors"></div>
+                `;
+                div.onclick = () => {
+                    const idx = selectedGroupMembers.indexOf(uid);
+                    const box = div.querySelector('.toggle-checkbox');
+                    if(idx > -1) {
+                        selectedGroupMembers.splice(idx, 1);
+                        box.classList.remove('bg-yoko-primary', 'border-yoko-primary');
+                        box.classList.add('border-gray-500');
+                        box.innerHTML = '';
+                    } else {
+                        selectedGroupMembers.push(uid);
+                        box.classList.remove('border-gray-500');
+                        box.classList.add('bg-yoko-primary', 'border-yoko-primary');
+                        box.innerHTML = '<i class="ph-bold ph-check text-white text-sm"></i>';
+                    }
+                };
+                list.appendChild(div);
+            });
+        };
+
+        document.getElementById('btn-confirm-create-group').onclick = async () => {
+            const name = document.getElementById('group-name-input').value.trim();
+            if(!name) return alert("Veuillez donner un nom au groupe.");
+            if(selectedGroupMembers.length === 0) return alert("Veuillez sélectionner au moins un membre.");
+
+            const newChatRef = doc(collection(db, 'chats'));
+            const newGroup = {
+                id: newChatRef.id,
+                type: 'group',
+                name: name,
+                participants: [currentUser.uid, ...selectedGroupMembers],
+                admins: [currentUser.uid], // Le créateur est admin
+                messages: [],
+                lastUpdate: Date.now()
+            };
+            
+            await setDoc(newChatRef, newGroup);
+            myChats.push(newGroup); // Ajout mémoire
+            
+            // Fermeture des modales et reset
+            document.getElementById('modal-create-group').classList.add('translate-y-full');
+            document.getElementById('modal-new-chat').classList.add('translate-y-full');
+            document.getElementById('group-name-input').value = '';
+            
+            openChatView(newGroup);
+        };
+
+
+        // --- RENDU DES CHATS EXISTANTS (Accueil) ---
         const renderChats = () => {
             const list = document.getElementById('chats-list');
             list.innerHTML = '';
@@ -685,94 +778,138 @@
             if (!currentUser) return;
             const rels = getMyRelations();
             
-            if (rels.friends.length === 0) {
+            if (myChats.length === 0 && rels.friends.length === 0) {
                 list.innerHTML = '<div class="text-center text-gray-500 mt-10">Ajoute des amis pour commencer à discuter !</div>';
                 return;
             }
 
-            // Créer une liste combinant tous les amis et leurs chats éventuels
-            let displayList = rels.friends.map(friendUid => {
-                const chat = myChats.find(c => c.participants.includes(friendUid));
-                return {
-                    friendUid: friendUid,
-                    chat: chat,
-                    lastUpdate: chat ? (chat.lastUpdate || 0) : 0
-                };
+            // On combine les vrais chats (groupes et directs) ET les contacts sans chat pour l'accueil
+            let displayList = [];
+            
+            // 1. Vrais chats
+            myChats.forEach(chat => {
+                displayList.push({ chat: chat, lastUpdate: chat.lastUpdate || 0 });
             });
 
-            // Trier par date de dernier message (les conversations actives en haut)
+            // 2. Amis sans chat direct
+            rels.friends.forEach(friendUid => {
+                const hasDirectChat = myChats.find(c => (!c.type || c.type === 'direct') && c.participants.length === 2 && c.participants.includes(friendUid));
+                if (!hasDirectChat) {
+                    displayList.push({ friendUid: friendUid, chat: null, lastUpdate: 0 }); // lastUpdate 0 les met en bas
+                }
+            });
+
             displayList.sort((a, b) => b.lastUpdate - a.lastUpdate);
 
             displayList.forEach(item => {
-                const otherUser = allUsers[item.friendUid];
-                if (!otherUser) return;
-                
-                const chat = item.chat;
-                const lastMsg = (chat && chat.messages && chat.messages.length > 0) 
-                    ? chat.messages[chat.messages.length - 1] 
-                    : { text: 'Nouvelle discussion', type: 'text' };
+                let name, avatar, msgPreview, isPing = false;
+                let onClickAction;
+
+                if (item.chat && item.chat.type === 'group') {
+                    // C'EST UN GROUPE
+                    name = item.chat.name;
+                    avatar = `https://placehold.co/150/1E1E1E/8A2BE2?text=${name.charAt(0).toUpperCase()}`;
+                    const lastMsg = (item.chat.messages && item.chat.messages.length > 0) ? item.chat.messages[item.chat.messages.length - 1] : { text: 'Groupe créé', senderId: item.chat.admins[0] };
+                    isPing = lastMsg.type === 'ping';
+                    let senderPseudo = lastMsg.senderId === currentUser.uid ? 'Vous' : (allUsers[lastMsg.senderId]?.pseudo || 'Membre');
+                    msgPreview = lastMsg.type === 'ping' ? `${senderPseudo} a envoyé un Ping` : `${senderPseudo}: ${lastMsg.text}`;
+                    onClickAction = () => openChatView(item.chat);
+                } else {
+                    // C'EST UN CHAT DIRECT (Ou contact sans chat)
+                    const otherUid = item.chat ? item.chat.participants.find(id => id !== currentUser.uid) : item.friendUid;
+                    const otherUser = allUsers[otherUid] || { pseudo: 'Inconnu', avatar: 'https://placehold.co/100/333/FFF?text=?' };
+                    name = otherUser.pseudo;
+                    avatar = otherUser.avatar;
                     
-                const isPing = lastMsg.type === 'ping';
-                let msgPreview = (chat && lastMsg.senderId === currentUser.uid) ? 'Vous: ' + lastMsg.text : lastMsg.text;
+                    if (item.chat) {
+                        const lastMsg = (item.chat.messages && item.chat.messages.length > 0) ? item.chat.messages[item.chat.messages.length - 1] : { text: 'Nouvelle discussion' };
+                        isPing = lastMsg.type === 'ping';
+                        msgPreview = lastMsg.senderId === currentUser.uid ? 'Vous: ' + lastMsg.text : lastMsg.text;
+                    } else {
+                        msgPreview = 'Nouvelle discussion';
+                    }
+                    onClickAction = () => openOrCreateChat(otherUid);
+                }
 
                 const div = document.createElement('div');
                 div.className = "flex items-center gap-4 p-3 rounded-2xl bg-yoko-surface/40 hover:bg-yoko-surface transition cursor-pointer border border-white/5";
                 div.innerHTML = `
-                    <img src="${otherUser.avatar}" class="w-14 h-14 rounded-full object-cover ${isPing ? 'ring-2 ring-yoko-primary neon-glow-primary' : ''}">
+                    <img src="${avatar}" class="w-14 h-14 rounded-full object-cover ${isPing ? 'ring-2 ring-yoko-primary neon-glow-primary' : ''}">
                     <div class="flex-1 min-w-0">
-                        <h3 class="font-semibold text-base truncate text-white">${otherUser.pseudo}</h3>
+                        <h3 class="font-semibold text-base truncate text-white">${name}</h3>
                         <p class="text-sm truncate font-medium ${isPing ? 'text-yoko-primary' : 'text-gray-400'}">${msgPreview}</p>
                     </div>
                 `;
-                // Clique sur l'ami = Ouvre le tchat existant ou le crée à la volée !
-                div.onclick = () => openOrCreateChat(item.friendUid);
-                list.appendChild(div);
+                div.onclick = onClickAction;
+                document.getElementById('chats-list').appendChild(div);
             });
         };
 
         const openOrCreateChat = async (targetUid) => {
             document.getElementById('modal-new-chat').classList.add('translate-y-full');
-            let chat = myChats.find(c => c.participants.includes(targetUid));
+            // Recherche d'un chat DIRECT uniquement
+            let chat = myChats.find(c => (!c.type || c.type === 'direct') && c.participants.length === 2 && c.participants.includes(targetUid));
             
             if (!chat) {
                 const newChatRef = doc(collection(db, 'chats'));
                 chat = {
                     id: newChatRef.id,
+                    type: 'direct',
                     participants: [currentUser.uid, targetUid],
                     messages: [],
                     lastUpdate: Date.now()
                 };
                 await setDoc(newChatRef, chat);
-                myChats.push(chat); // Ajout local immédiat pour éviter les délais de snapshot asynchrones
+                myChats.push(chat);
             }
-            openChatView(chat, allUsers[targetUid]);
+            openChatView(chat);
         };
 
-        const openChatView = (chat, otherUser) => {
+        const openChatView = (chat) => {
             currentActiveChatId = chat.id;
-            document.getElementById('chat-header-name').innerText = otherUser.pseudo;
-            document.getElementById('chat-header-avatar').src = otherUser.avatar;
-            document.getElementById('screen-chat').classList.remove('translate-x-full');
-            renderMessages(chat.messages || []);
+            const isGroup = chat.type === 'group';
 
-            const lastM = chat.messages && chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null;
-            if (lastM && lastM.type === 'ping' && lastM.senderId !== currentUser.uid) {
-                document.getElementById('app-wrapper').classList.add('flash-active');
-                setTimeout(() => document.getElementById('app-wrapper').classList.remove('flash-active'), 1800);
+            if (isGroup) {
+                document.getElementById('chat-header-name').innerText = chat.name;
+                document.getElementById('chat-header-avatar').src = `https://placehold.co/150/1E1E1E/8A2BE2?text=${chat.name.charAt(0).toUpperCase()}`;
+                document.getElementById('chat-header-subtitle').classList.remove('hidden'); // Montrer l'indice cliquable
+            } else {
+                const otherUid = chat.participants.find(id => id !== currentUser.uid);
+                const otherUser = allUsers[otherUid] || { pseudo: 'Inconnu', avatar: 'https://placehold.co/100/333/FFF?text=?' };
+                document.getElementById('chat-header-name').innerText = otherUser.pseudo;
+                document.getElementById('chat-header-avatar').src = otherUser.avatar;
+                document.getElementById('chat-header-subtitle').classList.add('hidden');
             }
+
+            document.getElementById('screen-chat').classList.remove('translate-x-full');
+            renderMessages(chat.messages || [], chat);
         };
 
-        const renderMessages = (messagesArray) => {
+        const renderMessages = (messagesArray, chatCtx) => {
             const chatBox = document.getElementById('chat-messages');
             chatBox.innerHTML = '';
+            
+            const isGroup = chatCtx && chatCtx.type === 'group';
+
             messagesArray.forEach(msg => {
                 const isMe = msg.senderId === currentUser.uid;
                 const isPing = msg.type === 'ping';
                 
-                const div = document.createElement('div');
-                div.className = `max-w-[75%] rounded-2xl px-4 py-2 ${isMe ? 'bg-yoko-surface border border-white/10 text-white ml-auto rounded-tr-sm' : 'bg-yoko-primary/20 border border-yoko-primary/30 text-white mr-auto rounded-tl-sm'} ${isPing ? 'border-yoko-primary font-bold text-yoko-primary neon-text-primary uppercase tracking-widest text-center w-full max-w-full' : ''}`;
-                div.innerText = msg.text;
-                chatBox.appendChild(div);
+                const wrapper = document.createElement('div');
+                wrapper.className = `max-w-[75%] flex flex-col mb-3 ${isMe ? 'ml-auto items-end' : 'mr-auto items-start'}`;
+
+                // Affichage du pseudo au-dessus du message pour les groupes (si ce n'est pas moi)
+                if (isGroup && !isMe) {
+                    const senderPseudo = allUsers[msg.senderId]?.pseudo || 'Membre';
+                    wrapper.innerHTML += `<span class="text-[10px] text-gray-500 mb-1 ml-1 font-bold">${senderPseudo}</span>`;
+                }
+
+                const bubble = document.createElement('div');
+                bubble.className = `rounded-2xl px-4 py-2 ${isMe ? 'bg-yoko-surface border border-white/10 text-white rounded-tr-sm' : 'bg-yoko-primary/20 border border-yoko-primary/30 text-white rounded-tl-sm'} ${isPing ? 'border-yoko-primary font-bold text-yoko-primary neon-text-primary uppercase tracking-widest text-center w-full max-w-full' : ''}`;
+                bubble.innerText = msg.text;
+                
+                wrapper.appendChild(bubble);
+                chatBox.appendChild(wrapper);
             });
             chatBox.scrollTop = chatBox.scrollHeight;
         };
@@ -786,8 +923,45 @@
             let newMessages = [...existingMessages, { senderId: currentUser.uid, text: text, type: type, timestamp: Date.now() }];
             if (newMessages.length > 50) newMessages = newMessages.slice(-50);
             
-            renderMessages(newMessages); 
+            renderMessages(newMessages, currentChat); 
             await updateDoc(chatRef, { messages: newMessages, lastUpdate: Date.now() });
+        };
+
+        // --- GESTION INFO GROUPE (ADMIN) ---
+        document.getElementById('chat-header-info-trigger').onclick = () => {
+            if(!currentActiveChatId) return;
+            const chat = myChats.find(c => c.id === currentActiveChatId);
+            
+            if (chat && chat.type === 'group') {
+                document.getElementById('modal-group-info').classList.remove('translate-y-full');
+                
+                document.getElementById('group-info-name').innerText = chat.name;
+                document.getElementById('group-info-avatar').src = `https://placehold.co/150/1E1E1E/8A2BE2?text=${chat.name.charAt(0).toUpperCase()}`;
+                document.getElementById('group-info-count').innerText = `${chat.participants.length} membres`;
+
+                const memberList = document.getElementById('group-info-members');
+                memberList.innerHTML = '';
+                
+                chat.participants.forEach(uid => {
+                    const u = allUsers[uid] || (uid === currentUser.uid ? myProfile : {pseudo:'Inconnu', avatar:''});
+                    const isAdmin = chat.admins && chat.admins.includes(uid);
+                    
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between p-3 bg-yoko-surface/50 rounded-xl border border-white/5";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <img src="${u.avatar}" class="w-10 h-10 rounded-full object-cover">
+                            <span class="font-bold text-white">${uid === currentUser.uid ? 'Vous' : u.pseudo}</span>
+                        </div>
+                        ${isAdmin ? '<span class="text-[10px] bg-yoko-primary/20 text-yoko-primary px-2 py-1 rounded font-bold uppercase tracking-wider">Admin</span>' : ''}
+                    `;
+                    memberList.appendChild(div);
+                });
+            }
+        };
+
+        document.getElementById('btn-close-group-info').onclick = () => {
+            document.getElementById('modal-group-info').classList.add('translate-y-full');
         };
 
         // --- UI INTERACTIONS & MODALS ---
@@ -796,12 +970,10 @@
             document.getElementById('input-message').value = '';
         };
 
-        // Fonction des Pings suspendue/désactivée
         document.getElementById('btn-send-ping').onclick = (e) => {
             e.preventDefault();
         };
 
-        // Tabs "Messages" / "Stories"
         const swipeContainer = document.getElementById('swipe-container');
         document.getElementById('tab-messages').onclick = () => swipeContainer.scrollTo({ left: 0, behavior: 'smooth' });
         document.getElementById('tab-stories').onclick = () => swipeContainer.scrollTo({ left: window.innerWidth, behavior: 'smooth' });
@@ -812,7 +984,6 @@
             document.getElementById('tab-stories').className = `cursor-pointer px-2 ${!isMsg ? 'text-white border-b-2 border-yoko-primary pb-1' : 'text-gray-500'}`;
         });
 
-        // Tabs "Ajouter Ami"
         document.getElementById('tab-suggestions').onclick = () => {
             currentAddFriendTab = 'suggestions';
             document.getElementById('tab-suggestions').className = 'flex-1 py-3 text-yoko-primary border-b-2 border-yoko-primary';
@@ -826,9 +997,11 @@
             renderAddFriendList();
         };
 
-        // Ouverture / Fermeture Modals
         document.getElementById('btn-close-chat').onclick = () => document.getElementById('screen-chat').classList.add('translate-x-full');
-        document.getElementById('btn-open-new-chat').onclick = () => document.getElementById('modal-new-chat').classList.remove('translate-y-full');
+        document.getElementById('btn-open-new-chat').onclick = () => {
+            document.getElementById('modal-new-chat').classList.remove('translate-y-full');
+            renderFriendsNoChatList(); // Affiche uniqument les amis sans chat direct
+        };
         document.getElementById('btn-close-new-chat').onclick = () => document.getElementById('modal-new-chat').classList.add('translate-y-full');
         document.getElementById('btn-open-add-friend').onclick = () => document.getElementById('modal-add-friend').classList.remove('translate-y-full');
         document.getElementById('btn-close-add-friend').onclick = () => document.getElementById('modal-add-friend').classList.add('translate-y-full');
@@ -837,13 +1010,13 @@
 
         // Gestion du QR Code
         document.getElementById('btn-open-qr').onclick = () => {
-            document.getElementById('modal-add-friend').classList.add('translate-y-full'); // Fermer fond
-            document.getElementById('modal-qr').classList.remove('translate-y-full'); // Ouvrir QR
+            document.getElementById('modal-add-friend').classList.add('translate-y-full');
+            document.getElementById('modal-qr').classList.remove('translate-y-full'); 
         };
         document.getElementById('btn-close-qr').onclick = () => {
             document.getElementById('modal-qr').classList.add('translate-y-full');
             if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear().catch(err => console.log(err)); // Eteindre camera
+                html5QrcodeScanner.clear().catch(err => console.log(err)); 
             }
         };
 
@@ -864,7 +1037,7 @@
         };
 
         const onScanSuccess = (decodedText) => {
-            html5QrcodeScanner.clear(); // Eteindre caméra
+            html5QrcodeScanner.clear(); 
             sendFriendRequest(decodedText).then(() => {
                 alert("Demande envoyée !");
                 document.getElementById('btn-switch-to-display').click();
@@ -894,7 +1067,6 @@
         const btnPwaAction = document.getElementById('btn-pwa-install-action');
         const iosInstructions = document.getElementById('pwa-ios-instructions');
 
-        // Enregistrement du Service Worker (CRUCIAL & REQUIS pour l'installabilité de la PWA)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
@@ -903,55 +1075,35 @@
             });
         }
 
-        // Détecter si l'application tourne déjà en mode autonome (déjà installée)
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-
-        // Détecter iOS
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-        // Ecouter l'événement d'installation natif de Google Chrome/Android/Windows
         window.addEventListener('beforeinstallprompt', (e) => {
-            // Empêcher l'affichage automatique natif par défaut
             e.preventDefault();
-            // Stocker l'événement pour le lancer plus tard
             deferredPrompt = e;
-            
-            // Si l'application n'est pas déjà installée, afficher notre modal personnalisé
             if (!isStandalone) {
-                setTimeout(() => {
-                    pwaInstallModal.classList.remove('translate-y-full');
-                }, 2000); // Apparaît 2 secondes après le chargement
+                setTimeout(() => { pwaInstallModal.classList.remove('translate-y-full'); }, 2000);
             }
         });
 
-        // Gestion de l'affichage manuel pour iOS si non autonome
         window.addEventListener('load', () => {
             if (isIOS && !isStandalone) {
-                // Configurer le modal pour les instructions iOS
-                btnPwaAction.classList.add('hidden'); // Cacher le bouton d'installation automatique incompatible
-                iosInstructions.classList.remove('hidden'); // Afficher les étapes manuelles
+                btnPwaAction.classList.add('hidden'); 
+                iosInstructions.classList.remove('hidden'); 
                 iosInstructions.classList.add('flex');
-                
-                setTimeout(() => {
-                    pwaInstallModal.classList.remove('translate-y-full');
-                }, 2000);
+                setTimeout(() => { pwaInstallModal.classList.remove('translate-y-full'); }, 2000);
             }
         });
 
-        // Clic sur l'action d'installation (Android / Windows)
         btnPwaAction.onclick = async () => {
             if (!deferredPrompt) return;
-            // Cacher notre modal
             pwaInstallModal.classList.add('translate-y-full');
-            // Déclencher le prompt natif du navigateur Chrome
             deferredPrompt.prompt();
-            // Attendre la réponse de l'utilisateur
             const { outcome } = await deferredPrompt.userChoice;
             console.log(`User response to install prompt: ${outcome}`);
             deferredPrompt = null;
         };
 
-        // Fermer le modal
         document.getElementById('btn-close-pwa-modal').onclick = () => {
             pwaInstallModal.classList.add('translate-y-full');
         };
