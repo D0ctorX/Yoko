@@ -41,10 +41,11 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
         import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
-        const firebaseConfig = { /* ... config inchangée ... */ };
+        // Initialisation Firebase via variables globales d'environnement
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -52,6 +53,20 @@
         const feedbackEl = document.getElementById('login-feedback');
         const pseudoInput = document.getElementById('login-pseudo');
         const pinInput = document.getElementById('login-pin');
+
+        // Authentification initiale automatique
+        const initAuth = async () => {
+          try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+              await signInAnonymously(auth);
+            }
+          } catch (e) {
+            console.error("Auth init error", e);
+          }
+        };
+        initAuth();
 
         function showFeedback(msg, type = 'error') {
             feedbackEl.innerText = msg;
