@@ -700,7 +700,7 @@
                         <p class="text-sm truncate font-medium ${isPing ? 'text-yoko-primary' : 'text-gray-400'}">${msgPreview}</p>
                     </div>
                 `;
-                // Clique sur l'ami = Ouvre le chat existant ou le crée à la volée !
+                // Clique sur l'ami = Ouvre le tchat existant ou le crée à la volée !
                 div.onclick = () => openOrCreateChat(item.friendUid);
                 list.appendChild(div);
             });
@@ -775,8 +775,6 @@
         // Fonction des Pings suspendue/désactivée
         document.getElementById('btn-send-ping').onclick = (e) => {
             e.preventDefault();
-            // Desactivé pour l'instant : pas d'action ni d'envoi.
-            // On peut optionnellement ajouter un petit toast visuel si besoin
         };
 
         // Tabs "Messages" / "Stories"
@@ -871,6 +869,15 @@
         const pwaInstallModal = document.getElementById('pwa-install-modal');
         const btnPwaAction = document.getElementById('btn-pwa-install-action');
         const iosInstructions = document.getElementById('pwa-ios-instructions');
+
+        // Enregistrement du Service Worker (CRUCIAL & REQUIS pour l'installabilité de la PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker enregistré avec succès !', reg))
+                    .catch(err => console.warn('Échec d\'enregistrement du Service Worker :', err));
+            });
+        }
 
         // Détecter si l'application tourne déjà en mode autonome (déjà installée)
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
