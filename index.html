@@ -517,7 +517,7 @@
                 }
 
                 renderAddFriendList();
-                renderChats(); // Rafraichit aussi la liste de la page d'accueil si nouveau contact
+                renderChats();
             });
 
             onSnapshot(collection(db, 'chats'), (snapshot) => {
@@ -542,6 +542,9 @@
         };
 
         const getFriendshipDocId = (uid1, uid2) => uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+        
+        // NOUVEAU: ID déterministe pour éviter les doublons de conversations directes
+        const getDirectChatDocId = (uid1, uid2) => uid1 < uid2 ? `direct_${uid1}_${uid2}` : `direct_${uid2}_${uid1}`;
 
         const getMyRelations = () => {
             let friends = [], pendingReceived = [], pendingSent = [];
@@ -662,7 +665,6 @@
             list.innerHTML = '';
             const rels = getMyRelations();
             
-            // Filtre les amis pour ne garder QUE ceux avec qui on n'a PAS de chat direct (1v1)
             const friendsNoChat = rels.friends.filter(uid => {
                 const existingChat = myChats.find(c => (!c.type || c.type === 'direct') && c.participants.length === 2 && c.participants.includes(uid));
                 return !existingChat;
@@ -701,7 +703,7 @@
         };
 
         const renderGroupFriendsSelection = () => {
-            selectedGroupMembers = []; // Réinitialise
+            selectedGroupMembers = []; 
             const list = document.getElementById('group-friends-list');
             list.innerHTML = '';
             const rels = getMyRelations();
@@ -753,15 +755,14 @@
                 type: 'group',
                 name: name,
                 participants: [currentUser.uid, ...selectedGroupMembers],
-                admins: [currentUser.uid], // Le créateur est admin
+                admins: [currentUser.uid], 
                 messages: [],
                 lastUpdate: Date.now()
             };
             
             await setDoc(newChatRef, newGroup);
-            myChats.push(newGroup); // Ajout mémoire
+            myChats.push(newGroup); 
             
-            // Fermeture des modales et reset
             document.getElementById('modal-create-group').classList.add('translate-y-full');
             document.getElementById('modal-new-chat').classList.add('translate-y-full');
             document.getElementById('group-name-input').value = '';
@@ -769,33 +770,32 @@
             openChatView(newGroup);
         };
 
-
         // --- RENDU DES CHATS EXISTANTS (Accueil) ---
         const renderChats = () => {
             const list = document.getElementById('chats-list');
             list.innerHTML = '';
             
             if (!currentUser) return;
-            const rels = getMyRelations();
             
-            if (myChats.length === 0 && rels.friends.length === 0) {
-                list.innerHTML = '<div class="text-center text-gray-500 mt-10">Ajoute des amis pour commencer à discuter !</div>';
+            if (myChats.length === 0) {
+                list.innerHTML = '<div class="text-center text-gray-500 mt-10">Aucune discussion active. Lance un chat pour commencer !</div>';
                 return;
             }
 
-            // On combine les vrais chats (groupes et directs) ET les contacts sans chat pour l'accueil
             let displayList = [];
+            // Utilisation d'un Set pour bloquer visuellement les doublons causés par l'ancien bug
+            let processedDirectFriends = new Set();
             
-            // 1. Vrais chats
             myChats.forEach(chat => {
-                displayList.push({ chat: chat, lastUpdate: chat.lastUpdate || 0 });
-            });
-
-            // 2. Amis sans chat direct
-            rels.friends.forEach(friendUid => {
-                const hasDirectChat = myChats.find(c => (!c.type || c.type === 'direct') && c.participants.length === 2 && c.participants.includes(friendUid));
-                if (!hasDirectChat) {
-                    displayList.push({ friendUid: friendUid, chat: null, lastUpdate: 0 }); // lastUpdate 0 les met en bas
+                if (chat.type === 'group') {
+                    displayList.push({ chat: chat, lastUpdate: chat.lastUpdate || 0 });
+                } else {
+                    const otherUid = chat.participants.find(id => id !== currentUser.uid);
+                    // Si on n'a pas encore traité cet ami direct, on l'ajoute
+                    if (!processedDirectFriends.has(otherUid)) {
+                        displayList.push({ chat: chat, lastUpdate: chat.lastUpdate || 0 });
+                        processedDirectFriends.add(otherUid);
+                    }
                 }
             });
 
@@ -806,7 +806,6 @@
                 let onClickAction;
 
                 if (item.chat && item.chat.type === 'group') {
-                    // C'EST UN GROUPE
                     name = item.chat.name;
                     avatar = `https://placehold.co/150/1E1E1E/8A2BE2?text=${name.charAt(0).toUpperCase()}`;
                     const lastMsg = (item.chat.messages && item.chat.messages.length > 0) ? item.chat.messages[item.chat.messages.length - 1] : { text: 'Groupe créé', senderId: item.chat.admins[0] };
@@ -815,20 +814,15 @@
                     msgPreview = lastMsg.type === 'ping' ? `${senderPseudo} a envoyé un Ping` : `${senderPseudo}: ${lastMsg.text}`;
                     onClickAction = () => openChatView(item.chat);
                 } else {
-                    // C'EST UN CHAT DIRECT (Ou contact sans chat)
-                    const otherUid = item.chat ? item.chat.participants.find(id => id !== currentUser.uid) : item.friendUid;
+                    const otherUid = item.chat.participants.find(id => id !== currentUser.uid);
                     const otherUser = allUsers[otherUid] || { pseudo: 'Inconnu', avatar: 'https://placehold.co/100/333/FFF?text=?' };
                     name = otherUser.pseudo;
                     avatar = otherUser.avatar;
                     
-                    if (item.chat) {
-                        const lastMsg = (item.chat.messages && item.chat.messages.length > 0) ? item.chat.messages[item.chat.messages.length - 1] : { text: 'Nouvelle discussion' };
-                        isPing = lastMsg.type === 'ping';
-                        msgPreview = lastMsg.senderId === currentUser.uid ? 'Vous: ' + lastMsg.text : lastMsg.text;
-                    } else {
-                        msgPreview = 'Nouvelle discussion';
-                    }
-                    onClickAction = () => openOrCreateChat(otherUid);
+                    const lastMsg = (item.chat.messages && item.chat.messages.length > 0) ? item.chat.messages[item.chat.messages.length - 1] : { text: 'Nouvelle discussion' };
+                    isPing = lastMsg.type === 'ping';
+                    msgPreview = lastMsg.senderId === currentUser.uid ? 'Vous: ' + lastMsg.text : lastMsg.text;
+                    onClickAction = () => openChatView(item.chat); // Ouvre simplement le chat existant
                 }
 
                 const div = document.createElement('div');
@@ -841,26 +835,33 @@
                     </div>
                 `;
                 div.onclick = onClickAction;
-                document.getElementById('chats-list').appendChild(div);
+                list.appendChild(div);
             });
         };
 
         const openOrCreateChat = async (targetUid) => {
             document.getElementById('modal-new-chat').classList.add('translate-y-full');
-            // Recherche d'un chat DIRECT uniquement
-            let chat = myChats.find(c => (!c.type || c.type === 'direct') && c.participants.length === 2 && c.participants.includes(targetUid));
+            
+            // Le secret est ici : Créer un ID de conversation unique garanti
+            const chatId = getDirectChatDocId(currentUser.uid, targetUid);
+            let chat = myChats.find(c => c.id === chatId);
             
             if (!chat) {
-                const newChatRef = doc(collection(db, 'chats'));
+                // Tente de récupérer un potentiel ancien chat sans ID déterministe (avant la màj)
+                chat = myChats.find(c => (!c.type || c.type === 'direct') && c.participants.length === 2 && c.participants.includes(targetUid));
+            }
+
+            if (!chat) {
+                const newChatRef = doc(db, 'chats', chatId);
                 chat = {
-                    id: newChatRef.id,
+                    id: chatId,
                     type: 'direct',
                     participants: [currentUser.uid, targetUid],
                     messages: [],
                     lastUpdate: Date.now()
                 };
                 await setDoc(newChatRef, chat);
-                myChats.push(chat);
+                myChats.push(chat); // Ajout local immédiat
             }
             openChatView(chat);
         };
@@ -872,7 +873,7 @@
             if (isGroup) {
                 document.getElementById('chat-header-name').innerText = chat.name;
                 document.getElementById('chat-header-avatar').src = `https://placehold.co/150/1E1E1E/8A2BE2?text=${chat.name.charAt(0).toUpperCase()}`;
-                document.getElementById('chat-header-subtitle').classList.remove('hidden'); // Montrer l'indice cliquable
+                document.getElementById('chat-header-subtitle').classList.remove('hidden'); 
             } else {
                 const otherUid = chat.participants.find(id => id !== currentUser.uid);
                 const otherUser = allUsers[otherUid] || { pseudo: 'Inconnu', avatar: 'https://placehold.co/100/333/FFF?text=?' };
@@ -898,7 +899,6 @@
                 const wrapper = document.createElement('div');
                 wrapper.className = `max-w-[75%] flex flex-col mb-3 ${isMe ? 'ml-auto items-end' : 'mr-auto items-start'}`;
 
-                // Affichage du pseudo au-dessus du message pour les groupes (si ce n'est pas moi)
                 if (isGroup && !isMe) {
                     const senderPseudo = allUsers[msg.senderId]?.pseudo || 'Membre';
                     wrapper.innerHTML += `<span class="text-[10px] text-gray-500 mb-1 ml-1 font-bold">${senderPseudo}</span>`;
@@ -1000,7 +1000,7 @@
         document.getElementById('btn-close-chat').onclick = () => document.getElementById('screen-chat').classList.add('translate-x-full');
         document.getElementById('btn-open-new-chat').onclick = () => {
             document.getElementById('modal-new-chat').classList.remove('translate-y-full');
-            renderFriendsNoChatList(); // Affiche uniqument les amis sans chat direct
+            renderFriendsNoChatList(); 
         };
         document.getElementById('btn-close-new-chat').onclick = () => document.getElementById('modal-new-chat').classList.add('translate-y-full');
         document.getElementById('btn-open-add-friend').onclick = () => document.getElementById('modal-add-friend').classList.remove('translate-y-full');
@@ -1008,9 +1008,8 @@
         document.getElementById('btn-open-profile').onclick = () => document.getElementById('profile-modal').classList.remove('translate-y-full');
         document.getElementById('btn-close-profile').onclick = () => document.getElementById('profile-modal').classList.add('translate-y-full');
 
-        // Gestion du QR Code
         document.getElementById('btn-open-qr').onclick = () => {
-            document.getElementById('modal-add-friend').classList.add('translate-y-full');
+            document.getElementById('modal-add-friend').classList.add('translate-y-full'); 
             document.getElementById('modal-qr').classList.remove('translate-y-full'); 
         };
         document.getElementById('btn-close-qr').onclick = () => {
@@ -1044,7 +1043,6 @@
             });
         };
 
-        // Profil Update
         document.getElementById('file-avatar').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
